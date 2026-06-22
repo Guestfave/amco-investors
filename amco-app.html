@@ -424,6 +424,14 @@
         </ul>
       </div>
     </div>
+    <div class="card" style="margin-bottom:16px">
+      <h2>Questions about this deal</h2>
+      <div id="qa-list" style="margin:8px 0 14px"></div>
+      <textarea id="qa-input" placeholder="Ask a question about this deal…" style="width:100%;border:1px solid var(--rule);border-radius:10px;padding:11px;font-family:'Inter',sans-serif;font-size:13.5px;min-height:64px;outline:none;resize:vertical;color:var(--ink)"></textarea>
+      <button class="btn" id="qa-send" style="margin-top:10px">Send question</button>
+      <span id="qa-done" style="display:none;color:var(--sage);font-size:12.5px;font-weight:600;margin-left:10px">✓ Sent — Amco will reply here.</span>
+    </div>
+
     <div class="foot"><b>Capital at risk.</b> Illustrations using assumed costs (10% +VAT management plus insurance), not promises. Redemption subject to notice and finding a buyer. Not financial advice. Amco co-invests 25%.</div>
   </div>
 </div>
@@ -668,8 +676,31 @@
     q('#d-reasons').innerHTML=d.reasons.map(function(r){return '<li style="margin-bottom:6px">'+r+'</li>';}).join('');
     root.querySelector('#shares').value=5; renderStake();
     updateCountdowns();
+    loadQA(d.id);
     go('deal');
   }
+  function escq(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function renderQA(listEl, rows){
+    rows=rows||[];
+    if(!rows.length){ listEl.innerHTML='<div style="font-size:12.5px;color:var(--muted)">No questions yet — be the first to ask.</div>'; return; }
+    listEl.innerHTML=rows.map(function(q){
+      return '<div style="border-bottom:1px solid var(--rule);padding:10px 0">'+
+        '<div style="font-size:13px"><b>'+escq(q.name||'Investor')+'</b> <span style="color:var(--muted);font-size:11px">asked</span></div>'+
+        '<div style="font-size:13px;margin:2px 0 0">'+escq(q.body)+'</div>'+
+        (q.answer ? '<div style="background:var(--clayBg);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:12.5px"><b style="color:var(--clay)">Amco:</b> '+escq(q.answer)+'</div>'
+                  : '<div style="font-size:11px;color:var(--muted);margin-top:4px">Awaiting reply from Amco</div>')+
+      '</div>';
+    }).join('');
+  }
+  function loadQA(dealId){ var listEl=root.querySelector('#qa-list'); listEl.innerHTML='<div style="font-size:12px;color:var(--muted)">Loading questions…</div>';
+    Promise.resolve(DB.questions(dealId)).then(function(rows){ renderQA(listEl, rows); }); }
+  root.querySelector('#qa-send').onclick=function(){
+    var box=root.querySelector('#qa-input'); var body=(box.value||'').trim(); if(!body||!current)return;
+    var btn=this; btn.textContent='Sending…';
+    Promise.resolve(DB.ask({deal_id:current.id, name:state.name||'Investor', body:body})).then(function(){
+      box.value=''; btn.textContent='Send question'; root.querySelector('#qa-done').style.display='inline'; loadQA(current.id);
+    });
+  };
   function renderStake(){
     if(!current)return; var d=current; var n=Math.max(1,parseInt(root.querySelector('#shares').value)||1);
     root.querySelector('#shares').value=n; var p=d.per;
@@ -876,7 +907,10 @@
         .catch(function(){ return localList(); }); } return Promise.resolve(localList()); }
     function localCommit(c){ try{var a=JSON.parse(window.localStorage.getItem('amco_commitments')||'[]'); a.push(c); window.localStorage.setItem('amco_commitments',JSON.stringify(a));}catch(e){} }
     function commit(c){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments',{method:'POST',headers:hdr(),body:JSON.stringify(c)}).then(function(r){ if(!r.ok) throw 0; return true; }).catch(function(){ localCommit(c); return false; }); } localCommit(c); return Promise.resolve(true); }
-    return { list:list, commit:commit, on:on };
+    function localQ(){ try{return JSON.parse(window.localStorage.getItem('amco_questions')||'[]');}catch(e){return [];} }
+    function ask(q){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions',{method:'POST',headers:hdr(),body:JSON.stringify(q)}).then(function(r){ if(!r.ok) throw 0; return true; }).catch(function(){ q.id='lq_'+Date.now(); var a=localQ(); a.push(q); try{window.localStorage.setItem('amco_questions',JSON.stringify(a));}catch(e){} return false; }); } q.id='lq_'+Date.now(); var a=localQ(); a.push(q); try{window.localStorage.setItem('amco_questions',JSON.stringify(a));}catch(e){} return Promise.resolve(true); }
+    function questions(dealId){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions?deal_id=eq.'+encodeURIComponent(dealId)+'&select=*&order=created_at.asc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localQ().filter(function(q){return q.deal_id===dealId;}); }); } return Promise.resolve(localQ().filter(function(q){return q.deal_id===dealId;})); }
+    return { list:list, commit:commit, ask:ask, questions:questions, on:on };
   })();
 
   renderList(); renderBuilder(); loadSession(); setAuthUI(); setAuthMode('signup');
