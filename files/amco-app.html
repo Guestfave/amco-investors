@@ -1,0 +1,870 @@
+<div id="amco-app">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+  #amco-app{ --ink:#333333; --muted:#5C6A64; --paper:#F4F3F1; --card:#FFFFFF; --rule:#E0E3DD;
+    --clay:#ED1D24; --clayBg:#FCE9E8; --sage:#3F7A5C; --sageBg:#F0F5F1; --teal:#2C5D6B; --amber:#C0763A; --danger:#B23A2E;
+    font-family:'Inter',ui-sans-serif,system-ui,sans-serif; color:var(--ink); background:var(--paper); border-radius:18px; }
+  #amco-app *{ box-sizing:border-box; }
+  #amco-app .disp{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.02em; }
+  #amco-app .tnum{ font-variant-numeric:tabular-nums; }
+  #amco-app .wrap{ max-width:1000px; margin:0 auto; padding:0 22px; }
+  #amco-app .eyebrow{ font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase; font-weight:700; color:var(--muted); }
+  #amco-app .card{ background:var(--card); border:1px solid var(--rule); border-radius:16px; padding:20px; box-shadow:0 1px 2px rgba(20,48,46,0.03); }
+  #amco-app h2{ font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:700; margin:0 0 14px; }
+  #amco-app .bigprice{ font-family:'Space Grotesk',sans-serif; font-variant-numeric:tabular-nums; font-size:30px; font-weight:700; }
+
+  #amco-app .btn{ font-size:13.5px; font-weight:600; border-radius:999px; padding:10px 18px; cursor:pointer; border:1px solid var(--clay); background:var(--clay); color:#fff; text-decoration:none; display:inline-block; text-align:center; font-family:'Inter',sans-serif; }
+  #amco-app .btn:hover{ background:#9d4626; }
+  #amco-app .btn-ink{ background:var(--ink); border-color:var(--ink); } #amco-app .btn-ink:hover{ background:#0d2422; }
+  #amco-app .btn-ghost{ background:transparent; color:var(--ink); border-color:var(--ink); }
+
+  /* nav */
+  #amco-app .nav{ display:flex; align-items:center; justify-content:space-between; padding:15px 22px; border-bottom:1px solid var(--rule); flex-wrap:wrap; gap:10px; position:sticky; top:0; background:var(--paper); z-index:5; }
+  #amco-app .brand{ display:flex; align-items:center; gap:9px; cursor:pointer; } #amco-app .blogo{ height:30px; width:30px; display:block; } #amco-app .bwm{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px; letter-spacing:-0.01em; color:var(--ink); } #amco-app .bwm i{ font-style:normal; color:var(--clay); margin-left:5px; }
+  #amco-app .navlinks{ display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  #amco-app .navlinks a{ font-size:13.5px; color:var(--muted); text-decoration:none; font-weight:500; cursor:pointer; }
+  #amco-app .navlinks a:hover, #amco-app .navlinks a.active{ color:var(--ink); }
+
+  /* pages */
+  #amco-app .page{ display:none; } #amco-app .page.show{ display:block; animation:fade .25s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  /* home */
+  #amco-app .hero{ padding:52px 0 36px; }
+  #amco-app .hero h1{ font-size:44px; line-height:1.04; margin:14px 0 16px; font-weight:700; max-width:740px; }
+  #amco-app .lead{ font-size:16.5px; color:var(--muted); max-width:560px; line-height:1.5; margin:0 0 24px; }
+  #amco-app .cta-row{ display:flex; gap:12px; flex-wrap:wrap; }
+  #amco-app .trust{ margin-top:24px; display:flex; gap:22px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); } #amco-app .trust b{ color:var(--ink); }
+  #amco-app .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  #amco-app .pcard{ background:var(--card); border:1px solid var(--rule); border-radius:16px; padding:22px; cursor:pointer; display:flex; flex-direction:column; transition:box-shadow .18s ease, transform .18s ease; box-shadow:0 1px 2px rgba(20,48,46,0.03); }
+  #amco-app .pcard:hover{ box-shadow:0 6px 18px rgba(20,48,46,0.08); transform:translateY(-2px); }
+  #amco-app .icon{ width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:13px; }
+  #amco-app .pcard h3{ font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; margin:0 0 6px; }
+  #amco-app .pcard p{ font-size:13px; color:var(--muted); line-height:1.5; margin:0 0 14px; flex:1; }
+  #amco-app .go{ font-size:13px; font-weight:700; }
+  #amco-app .strip{ background:var(--ink); color:#fff; border-radius:16px; padding:24px; display:flex; gap:20px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  #amco-app .strip h4{ font-family:'Space Grotesk',sans-serif; font-size:19px; margin:0 0 4px; font-weight:700; } #amco-app .strip p{ margin:0; font-size:13px; color:#C7D2CE; max-width:440px; line-height:1.5; }
+
+  /* list */
+  #amco-app .head{ padding:28px 0 12px; }
+  #amco-app .filters{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:4px 0 18px; }
+  #amco-app .seg{ display:inline-flex; background:#fff; border:1px solid var(--rule); border-radius:999px; padding:3px; }
+  #amco-app .seg button{ border:none; background:none; font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600; color:var(--muted); padding:6px 13px; border-radius:999px; cursor:pointer; }
+  #amco-app .seg button.on{ background:var(--ink); color:#fff; }
+  #amco-app .chip{ border:1px solid var(--rule); background:#fff; font-size:12.5px; font-weight:600; color:var(--muted); padding:7px 13px; border-radius:999px; cursor:pointer; }
+  #amco-app .chip.on{ color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink); }
+  #amco-app select{ font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600; color:var(--ink); border:1px solid var(--rule); border-radius:999px; padding:7px 13px; background:#fff; cursor:pointer; }
+  #amco-app .count{ font-size:12.5px; color:var(--muted); margin-left:auto; }
+  #amco-app .list{ display:grid; gap:16px; padding-bottom:26px; }
+  #amco-app .lcard{ background:var(--card); border:1px solid var(--rule); border-radius:16px; overflow:hidden; display:flex; flex-wrap:wrap; box-shadow:0 1px 2px rgba(20,48,46,0.03); transition:box-shadow .18s ease; }
+  #amco-app .lcard:hover{ box-shadow:0 6px 20px rgba(20,48,46,0.08); }
+  #amco-app .thumb{ flex:0 0 160px; min-height:150px; display:flex; align-items:flex-end; padding:12px; color:#fff; cursor:pointer; }
+  #amco-app .thumb .tag{ background:rgba(255,255,255,0.92); color:var(--ink); font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px; }
+  #amco-app .lbody{ flex:1 1 300px; padding:17px 19px; display:flex; flex-direction:column; cursor:pointer; }
+  #amco-app .lbody h3{ font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:700; margin:0; }
+  #amco-app .loc{ font-size:12.5px; color:var(--muted); margin:2px 0; }
+  #amco-app .desc{ font-size:12px; color:var(--muted); margin:0 0 12px; }
+  #amco-app .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:auto; }
+  #amco-app .stat .k{ font-size:9.5px; letter-spacing:0.03em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+  #amco-app .stat .v{ font-family:'Space Grotesk',sans-serif; font-variant-numeric:tabular-nums; font-size:15px; font-weight:700; margin-top:1px; }
+  #amco-app .stat .s{ font-size:9.5px; color:var(--muted); }
+  #amco-app .side{ flex:0 0 184px; border-left:1px solid var(--rule); padding:17px; display:flex; flex-direction:column; gap:11px; }
+  #amco-app .risk{ font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:999px; align-self:flex-start; }
+  #amco-app .risk.low{ background:var(--sageBg); color:var(--sage); } #amco-app .risk.medium{ background:#FBF1E6; color:var(--amber); } #amco-app .risk.high{ background:var(--clayBg); color:var(--clay); }
+  #amco-app .prog{ font-size:10.5px; color:var(--muted); }
+  #amco-app .bar{ height:6px; background:var(--rule); border-radius:99px; overflow:hidden; margin-top:5px; } #amco-app .bar i{ display:block; height:100%; background:var(--sage); }
+  #amco-app .closes{ font-size:10.5px; font-weight:700; color:var(--muted); letter-spacing:0.01em; }
+  #amco-app .navauth{ font-size:13px; font-weight:700; color:var(--ink) !important; cursor:pointer; border:1px solid var(--rule); padding:8px 14px; border-radius:999px; }
+  #amco-app .vid{ position:relative; border-radius:14px; overflow:hidden; background:linear-gradient(135deg,#14302E,#2C5D6B); min-height:200px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  #amco-app .vid.sm{ min-height:150px; }
+  #amco-app .vid .play{ width:58px; height:58px; border-radius:99px; background:rgba(255,255,255,0.94); display:flex; align-items:center; justify-content:center; }
+  #amco-app .vid .play:after{ content:''; border-left:18px solid var(--clay); border-top:11px solid transparent; border-bottom:11px solid transparent; margin-left:5px; }
+  #amco-app .vid .vcap{ position:absolute; left:14px; bottom:12px; color:#fff; font-size:12.5px; font-weight:600; }
+  #amco-app .vid .vtag{ position:absolute; right:12px; top:12px; background:rgba(255,255,255,0.92); color:var(--ink); font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px; }
+  #amco-app .how-sec{ margin-bottom:28px; }
+  #amco-app .diagram{ background:#fff; border:1px solid var(--rule); border-radius:14px; padding:14px; }
+  #amco-app .steps{ display:grid; gap:14px; }
+  #amco-app .step{ display:flex; gap:13px; align-items:flex-start; }
+  #amco-app .stepn{ flex:0 0 30px; width:30px; height:30px; border-radius:99px; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; font-family:'Space Grotesk',sans-serif; }
+  #amco-app .step h4{ margin:0; font-size:14px; } #amco-app .step p{ margin:2px 0 0; font-size:12.5px; color:var(--muted); line-height:1.45; }
+  #amco-app .getrow{ display:flex; flex-wrap:wrap; gap:12px; }
+  #amco-app .getcard{ flex:1 1 170px; background:#fff; border:1px solid var(--rule); border-radius:14px; padding:16px; }
+  #amco-app #proto-banner{ background:var(--clay); color:#fff; font-size:12px; font-weight:600; text-align:center; padding:7px 34px 7px 14px; position:relative; }
+  #amco-app #proto-banner b{ font-weight:800; }
+  #amco-app #proto-banner .x{ position:absolute; right:12px; top:6px; cursor:pointer; opacity:0.85; font-weight:700; }
+  #amco-app .persona{ display:flex; gap:14px; align-items:center; border:1px solid var(--rule); border-radius:14px; padding:15px; cursor:pointer; background:#fff; transition:box-shadow .15s, transform .15s; }
+  #amco-app .persona:hover{ box-shadow:0 6px 16px rgba(0,0,0,0.08); transform:translateY(-1px); }
+  #amco-app .pava{ width:46px; height:46px; border-radius:99px; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-family:'Space Grotesk',sans-serif; flex:0 0 46px; }
+  #amco-app .persona h4{ margin:0; font-size:15px; } #amco-app .persona p{ margin:2px 0 0; font-size:12px; color:var(--muted); }
+  #amco-app .signout{ font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; border:1px solid var(--rule); padding:6px 12px; border-radius:999px; background:#fff; }
+  #amco-app .bfield2{ display:block; margin-bottom:10px; }
+  #amco-app .bfield2 span{ font-size:11px; color:var(--muted); font-weight:600; }
+  #amco-app .bfield2 input{ width:100%; margin-top:4px; border:1px solid var(--rule); border-radius:9px; padding:11px 12px; font-size:14px; font-family:'Inter',sans-serif; outline:none; color:var(--ink); }
+  #amco-app .bfield2 input:focus{ border-color:var(--clay); }
+  /* onboarding */
+  #amco-app .obar{ height:6px; background:var(--rule); border-radius:99px; overflow:hidden; margin-bottom:22px; }
+  #amco-app .ofill{ height:100%; background:var(--clay); width:25%; transition:width .25s ease; }
+  #amco-app .ostep{ display:none; } #amco-app .ostep.show{ display:block; animation:fade .25s ease; }
+  #amco-app .ofield{ display:block; margin-bottom:12px; }
+  #amco-app .ofield span{ font-size:12px; color:var(--muted); font-weight:600; }
+  #amco-app .ofield input{ width:100%; margin-top:5px; border:1px solid var(--rule); border-radius:9px; padding:10px 12px; font-family:'Inter',sans-serif; font-size:14px; color:var(--ink); outline:none; }
+  #amco-app .opt{ display:flex; gap:10px; align-items:flex-start; border:1px solid var(--rule); border-radius:11px; padding:13px; margin-bottom:10px; cursor:pointer; }
+  #amco-app .opt.sel{ box-shadow:inset 0 0 0 1px var(--ink); border-color:var(--ink); }
+  #amco-app .opt h4{ margin:0; font-size:13.5px; } #amco-app .opt p{ margin:2px 0 0; font-size:11.5px; color:var(--muted); line-height:1.4; }
+  #amco-app .ack{ display:flex; gap:10px; align-items:flex-start; font-size:12.5px; line-height:1.45; margin-bottom:11px; }
+  #amco-app .ack input{ margin-top:2px; accent-color:var(--clay); }
+  #amco-app .orow{ display:flex; gap:10px; margin-top:8px; }
+  #amco-app .btn[disabled]{ opacity:.45; pointer-events:none; }
+  /* dashboard */
+  #amco-app .sumgrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  #amco-app .sum .k{ font-size:10px; letter-spacing:0.03em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+  #amco-app .sum .v{ font-family:'Space Grotesk',sans-serif; font-variant-numeric:tabular-nums; font-size:21px; font-weight:700; margin-top:3px; }
+  #amco-app .stage{ display:flex; gap:6px; align-items:center; margin:10px 0; }
+  #amco-app .stagepip{ flex:1; height:6px; border-radius:99px; background:var(--rule); }
+  #amco-app .stagepip.on{ background:var(--sage); }
+  #amco-app .stmt .kv{ font-size:12px; }
+  #amco-app .stmt .net{ font-weight:700; color:var(--sage); }
+  @media (max-width:760px){ #amco-app .sumgrid{ grid-template-columns:repeat(2,1fr);} }
+
+  /* detail */
+  #amco-app .crumbs{ font-size:12.5px; color:var(--muted); padding:16px 0 4px; } #amco-app .crumbs a{ color:var(--muted); cursor:pointer; }
+  #amco-app .dhero{ display:flex; gap:20px; flex-wrap:wrap; margin:6px 0 18px; }
+  #amco-app .heroimg{ flex:1 1 300px; min-height:190px; border-radius:16px; display:flex; align-items:flex-end; padding:14px; }
+  #amco-app .heroimg .tag{ background:rgba(255,255,255,0.92); color:var(--ink); font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:999px; }
+  #amco-app .herobuy{ flex:1 1 280px; }
+  #amco-app .dhero h1{ font-size:27px; font-weight:700; margin:4px 0 2px; }
+  #amco-app .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  #amco-app .stepper{ display:flex; align-items:center; border:1px solid var(--rule); border-radius:10px; overflow:hidden; width:fit-content; }
+  #amco-app .stepper button{ width:38px; height:38px; border:none; background:#fff; font-size:19px; cursor:pointer; color:var(--ink); }
+  #amco-app .stepper input{ width:58px; text-align:center; border:none; border-left:1px solid var(--rule); border-right:1px solid var(--rule); font-family:'Space Grotesk',sans-serif; font-variant-numeric:tabular-nums; font-size:16px; font-weight:700; height:38px; }
+  #amco-app .kv{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--rule); font-size:12.5px; } #amco-app .kv:last-child{ border-bottom:none; }
+  #amco-app .kv b{ font-family:'Space Grotesk',sans-serif; font-variant-numeric:tabular-nums; }
+  #amco-app .timeline{ position:relative; } #amco-app .tline{ position:absolute; left:6px; top:6px; bottom:14px; width:2px; background:var(--rule); }
+  #amco-app .tstep{ display:flex; gap:13px; padding-bottom:16px; } #amco-app .tstep:last-child{ padding-bottom:0; }
+  #amco-app .dot{ flex:0 0 14px; width:14px; height:14px; border-radius:99px; margin-top:2px; z-index:1; }
+  #amco-app .tstep h4{ margin:0; font-size:13px; font-weight:700; } #amco-app .tstep p{ margin:2px 0 0; font-size:11.5px; color:var(--muted); } #amco-app .when{ font-size:10.5px; color:var(--muted); font-weight:600; }
+  #amco-app .note{ background:var(--sageBg); border:1px solid var(--sage); border-radius:12px; padding:14px; font-size:12px; line-height:1.5; }
+
+  /* builder */
+  #amco-app .binput{ display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  #amco-app .bfield{ background:#fff; border:1px solid var(--rule); border-radius:10px; padding:8px 12px; }
+  #amco-app .bfield input{ border:none; outline:none; font-family:'Space Grotesk',sans-serif; font-variant-numeric:tabular-nums; font-size:22px; font-weight:700; width:140px; color:var(--ink); }
+  #amco-app .bres{ display:grid; gap:12px; margin-top:18px; }
+  #amco-app .brow{ display:flex; justify-content:space-between; align-items:center; gap:12px; background:#fff; border:1px solid var(--rule); border-radius:12px; padding:14px 16px; flex-wrap:wrap; }
+
+  #amco-app .foot{ border-top:1px solid var(--rule); padding:18px 0 26px; font-size:11.5px; color:var(--muted); line-height:1.6; } #amco-app .foot b{ color:var(--ink); }
+  #amco-app a:focus-visible,#amco-app button:focus-visible,#amco-app select:focus-visible{ outline:2px solid var(--clay); outline-offset:2px; }
+  @media (max-width:760px){ #amco-app .grid,#amco-app .grid2{ grid-template-columns:1fr; } #amco-app .side{ border-left:none; border-top:1px solid var(--rule); flex:1 1 100%; flex-direction:row; align-items:center; flex-wrap:wrap; } #amco-app .stats{ grid-template-columns:repeat(2,1fr);} #amco-app .hero h1{ font-size:32px;} #amco-app .dhero h1{ font-size:23px;} }
+  @media (prefers-reduced-motion: reduce){ #amco-app *{ transition:none !important; animation:none !important; } }
+</style>
+
+<!-- NAV -->
+<div id="proto-banner"><b>Prototype demo.</b> No real money is taken and no real details are needed — it's here to show how Amco works. <span class="x" id="proto-x">✕</span></div>
+<div class="nav">
+  <div class="brand" data-go="home"><img class="blogo" src="data:image/png;base64,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" alt="Amco"><span class="bwm">amco<i>investors</i></span></div>
+  <div class="navlinks">
+    <a data-go="how">How it works</a>
+    <a data-go="investments">Investments</a>
+    <a data-go="builder">Builder</a>
+    <a data-go="portfolio">Your investments</a>
+    <a data-go="completed">Completed</a>
+    <a class="navauth" id="nav-auth" data-auth="1">Sign in</a>
+    <a class="btn btn-ink" data-go="investments" style="color:#fff">Invest</a>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="page show" id="page-home">
+  <div class="wrap hero">
+    <div class="eyebrow" style="color:var(--clay)">Accessible property investment</div>
+    <h1 class="disp">Property investment,<br>opened up.</h1>
+    <p class="lead">Own real bricks and mortar from a single share. We put our own money into every deal — and we show you the risks as plainly as the returns.</p>
+    <div class="cta-row">
+      <a class="btn" data-go="investments">Browse investments</a>
+      <a class="btn btn-ghost" data-go="builder">Try the builder</a>
+    </div>
+    <div class="trust">
+      <span><b>From one share.</b> Low entry, real ownership.</span>
+      <span><b>25% co-invested.</b> Our money's in every deal.</span>
+      <span><b>Risks shown straight.</b> No hype.</span>
+    </div>
+  </div>
+  <div class="wrap" style="padding-bottom:34px">
+    <div class="eyebrow" style="margin-bottom:14px">Where to start</div>
+    <div class="grid">
+      <div class="pcard" data-go="investments">
+        <div class="icon" style="background:var(--sageBg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3F7A5C" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="11" width="18" height="4" rx="1"/><rect x="3" y="18" width="12" height="3" rx="1"/></svg></div>
+        <h3>Investments</h3><p>Browse live opportunities. Filter by type, share price, risk and timescale — key numbers shown before you click in.</p><span class="go" style="color:var(--sage)">View investments →</span>
+      </div>
+      <div class="pcard" data-go="portfolio">
+        <div class="icon" style="background:var(--clayBg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B5532E" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div>
+        <h3>Your investments</h3><p>Track what you own and where each deal is up to, with a monthly view of income received and costs carried.</p><span class="go" style="color:var(--clay)">Open dashboard →</span>
+      </div>
+      <div class="pcard" data-go="builder">
+        <div class="icon" style="background:var(--sageBg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2C5D6B" stroke-width="2"><line x1="5" y1="6" x2="19" y2="6"/><circle cx="9" cy="6" r="2.4" fill="#fff"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="15" cy="12" r="2.4" fill="#fff"/><line x1="5" y1="18" x2="19" y2="18"/><circle cx="11" cy="18" r="2.4" fill="#fff"/></svg></div>
+        <h3>Investment builder</h3><p>Enter what you could invest and see which live deals fit. Illustrative, never a recommendation.</p><span class="go" style="color:var(--teal)">Try the builder →</span>
+      </div>
+      <div class="pcard" data-go="completed">
+        <div class="icon" style="background:var(--clayBg)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B5532E" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Completed investments</h3><p>See deals that have filled and how fast. Ask to be notified when a share reopens.</p><span class="go" style="color:var(--clay)">See completed →</span>
+      </div>
+    </div>
+  </div>
+  <div class="wrap" style="padding-bottom:34px">
+    <div class="strip"><div><h4 class="disp">Buy in. Get most of it back. Keep earning.</h4><p>We buy and refurbish for cash, refinance to return the bulk of your capital, then run the income against the loan. Two stages, both shown honestly.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn" data-go="how">How it works</a><a class="btn btn-ghost" data-go="investments" style="color:#fff;border-color:#fff">See the deals</a></div></div>
+  </div>
+  <div class="wrap foot"><b>Capital at risk.</b> Property values can fall and you could get back less than you invest. Property is illiquid. Figures are illustrations, not promises. Nothing here is financial advice. Amco co-invests 25% in every deal.</div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="page" id="page-how">
+  <div class="wrap">
+    <div class="hero" style="padding:42px 0 22px">
+      <div class="eyebrow" style="color:var(--clay)">What we do here</div>
+      <h1 class="disp" style="font-size:38px;margin:12px 0 12px">How Amco works</h1>
+      <p class="lead">We make it possible to own a share of real property with a small amount of money — and we keep it honest at every step. Here's exactly how.</p>
+    </div>
+
+    <div class="how-sec">
+      <div class="vid"><div class="vtag">2 min</div><div class="play"></div><div class="vcap">▶ Watch: how Amco works</div></div>
+      <p style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:8px">A short explainer video will live here.</p>
+    </div>
+
+    <div class="how-sec">
+      <h2 class="disp" style="font-size:20px;margin-bottom:8px">The idea</h2>
+      <p style="font-size:14px;color:var(--muted);line-height:1.55;max-width:640px;margin:0 0 14px">A good property can cost more than most people can invest alone. So we pool money from many investors — and put in our own — to buy one together. Everyone owns a share of a company that owns the property, so everyone owns a real slice of the bricks and mortar.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 700 240" width="100%" style="max-width:700px;display:block;margin:0 auto" font-family="Inter,sans-serif">
+          <rect x="8" y="34" width="200" height="150" rx="12" fill="#F0F5F1" stroke="#3F7A5C"/>
+          <text x="108" y="56" text-anchor="middle" font-size="12.5" font-weight="700" fill="#14302E">You + other investors</text>
+          <g fill="#14302E"><circle cx="58" cy="92" r="9"/><rect x="49" y="103" width="18" height="22" rx="9"/><circle cx="108" cy="92" r="9"/><rect x="99" y="103" width="18" height="22" rx="9"/><circle cx="158" cy="92" r="9"/><rect x="149" y="103" width="18" height="22" rx="9"/></g>
+          <rect x="28" y="145" width="160" height="26" rx="13" fill="#B5532E"/>
+          <text x="108" y="162" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff">+ Amco invests 25% too</text>
+          <line x1="212" y1="109" x2="252" y2="109" stroke="#5C6A64" stroke-width="2"/><polygon points="252,104 262,109 252,114" fill="#5C6A64"/>
+          <rect x="270" y="54" width="170" height="110" rx="12" fill="#fff" stroke="#14302E" stroke-width="2"/>
+          <rect x="292" y="78" width="34" height="62" fill="#2C5D6B"/>
+          <g fill="#fff"><rect x="298" y="86" width="8" height="8"/><rect x="312" y="86" width="8" height="8"/><rect x="298" y="102" width="8" height="8"/><rect x="312" y="102" width="8" height="8"/><rect x="298" y="118" width="8" height="8"/><rect x="312" y="118" width="8" height="8"/></g>
+          <text x="340" y="98" font-size="11.5" font-weight="700" fill="#14302E">A company</text><text x="340" y="114" font-size="11" fill="#5C6A64">that owns</text><text x="340" y="128" font-size="11" fill="#5C6A64">the property</text>
+          <line x1="444" y1="109" x2="484" y2="109" stroke="#5C6A64" stroke-width="2"/><polygon points="484,104 494,109 484,114" fill="#5C6A64"/>
+          <polygon points="502,96 582,52 662,96" fill="#B5532E"/><rect x="520" y="96" width="124" height="72" fill="#fff" stroke="#14302E" stroke-width="2"/><rect x="568" y="128" width="28" height="40" fill="#2C5D6B"/>
+          <text x="582" y="190" text-anchor="middle" font-size="12.5" font-weight="700" fill="#14302E">The property</text>
+          <text x="350" y="222" text-anchor="middle" font-size="12" fill="#5C6A64">Everyone owns a share of the company — so everyone owns a slice of the property.</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="how-sec">
+      <h2 class="disp" style="font-size:20px;margin-bottom:8px">How your money works</h2>
+      <p style="font-size:14px;color:var(--muted);line-height:1.55;max-width:640px;margin:0 0 14px">We don't just buy and sit. We buy and improve, then refinance to hand most of your money back — so your cash isn't locked away for years. What stays in keeps earning.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 700 200" width="100%" style="max-width:700px;display:block;margin:0 auto" font-family="Inter,sans-serif">
+          <rect x="6" y="24" width="200" height="140" rx="12" fill="#fff" stroke="#E0E3DD"/>
+          <circle cx="34" cy="52" r="14" fill="#B5532E"/><text x="34" y="57" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">1</text>
+          <polygon points="62,86 88,68 114,86" fill="#B5532E"/><rect x="70" y="86" width="36" height="28" fill="#F0F5F1" stroke="#14302E"/>
+          <text x="24" y="134" font-size="12.5" font-weight="700" fill="#14302E">We buy &amp; refurbish</text><text x="24" y="150" font-size="11" fill="#5C6A64">with your pooled cash</text>
+          <line x1="208" y1="94" x2="244" y2="94" stroke="#5C6A64" stroke-width="2"/><polygon points="244,89 254,94 244,99" fill="#5C6A64"/>
+          <rect x="250" y="24" width="200" height="140" rx="12" fill="#fff" stroke="#E0E3DD"/>
+          <circle cx="278" cy="52" r="14" fill="#2C5D6B"/><text x="278" y="57" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">2</text>
+          <polygon points="306,84 338,66 370,84" fill="#2C5D6B"/><rect x="310" y="84" width="56" height="30" fill="#F0F5F1" stroke="#14302E"/>
+          <g stroke="#14302E"><line x1="320" y1="88" x2="320" y2="110"/><line x1="338" y1="88" x2="338" y2="110"/><line x1="356" y1="88" x2="356" y2="110"/></g>
+          <text x="268" y="134" font-size="12.5" font-weight="700" fill="#14302E">We refinance</text><text x="268" y="150" font-size="11" fill="#5C6A64">most of your cash comes back</text>
+          <line x1="452" y1="94" x2="488" y2="94" stroke="#5C6A64" stroke-width="2"/><polygon points="488,89 498,94 488,99" fill="#5C6A64"/>
+          <rect x="494" y="24" width="200" height="140" rx="12" fill="#fff" stroke="#E0E3DD"/>
+          <circle cx="522" cy="52" r="14" fill="#3F7A5C"/><text x="522" y="57" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">3</text>
+          <g fill="#3F7A5C"><ellipse cx="560" cy="100" rx="26" ry="8"/><ellipse cx="560" cy="90" rx="26" ry="8"/><ellipse cx="560" cy="80" rx="26" ry="8"/></g>
+          <text x="512" y="134" font-size="12.5" font-weight="700" fill="#14302E">The rest keeps earning</text><text x="512" y="150" font-size="11" fill="#5C6A64">income now, plus your share at sale</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="how-sec">
+      <h2 class="disp" style="font-size:20px;margin-bottom:12px">What you get</h2>
+      <div class="getrow">
+        <div class="getcard"><div class="eyebrow" style="color:var(--clay)">From day one</div><div style="font-family:'Space Grotesk';font-weight:700;font-size:15px;margin:5px 0 3px">Income immediately</div><p style="font-size:12.5px;color:var(--muted);margin:0;line-height:1.45">The property is already let, so you earn from the moment the deal completes.</p></div>
+        <div class="getcard"><div class="eyebrow" style="color:var(--teal)">After refinance</div><div style="font-family:'Space Grotesk';font-weight:700;font-size:15px;margin:5px 0 3px">Most of your money back</div><p style="font-size:12.5px;color:var(--muted);margin:0;line-height:1.45">We refinance and return the bulk of your capital, usually within months.</p></div>
+        <div class="getcard"><div class="eyebrow" style="color:var(--sage)">Ongoing</div><div style="font-family:'Space Grotesk';font-weight:700;font-size:15px;margin:5px 0 3px">A growing stake</div><p style="font-size:12.5px;color:var(--muted);margin:0;line-height:1.45">What stays in keeps earning, plus your share of any growth when we sell.</p></div>
+      </div>
+    </div>
+
+    <div class="how-sec">
+      <h2 class="disp" style="font-size:20px;margin-bottom:14px">How to invest</h2>
+      <div class="steps">
+        <div class="step"><div class="stepn">1</div><div><h4>Browse the deals</h4><p>See live opportunities with the key numbers and risks shown up front.</p></div></div>
+        <div class="step"><div class="stepn">2</div><div><h4>Choose your shares</h4><p>Pick how many shares you want — from a single share up.</p></div></div>
+        <div class="step"><div class="stepn">3</div><div><h4>Reserve &amp; verify</h4><p>Confirm you understand the risks, reserve your shares and verify your identity.</p></div></div>
+        <div class="step"><div class="stepn">4</div><div><h4>Earn &amp; track</h4><p>Watch your income and your stake in your dashboard, month by month.</p></div></div>
+      </div>
+    </div>
+
+    <div class="how-sec">
+      <div class="strip"><div><h4 class="disp">We invest our own money too</h4><p>Amco co-invests 25% of every deal, alongside you. If it's not good enough for our money, it's not going on the platform.</p></div><a class="btn" data-go="investments">See the deals</a></div>
+    </div>
+
+    <div class="how-sec">
+      <div style="background:#FBF3EC;border:1px solid var(--clay);border-radius:14px;padding:16px">
+        <div class="eyebrow" style="color:var(--clay)">The honest part</div>
+        <p style="font-size:13px;color:var(--ink);line-height:1.55;margin:8px 0 0">Property can fall as well as rise, so your capital is at risk and you could get back less than you invest. Your money is committed — to exit you give 1–6 months' notice while we find a buyer for your shares. Every figure we show is an honest illustration, not a promise. None of this is financial advice.</p>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding-bottom:34px"><a class="btn" data-go="investments" style="padding:12px 26px">Browse investments</a></div>
+  </div>
+</div>
+
+<!-- INVESTMENTS LIST -->
+<div class="page" id="page-investments">
+  <div class="wrap">
+    <div class="head"><div class="eyebrow" style="color:var(--clay)">Live opportunities</div><h1 class="disp" style="font-size:30px;margin:6px 0 0">Investments</h1></div>
+    <div class="filters">
+      <div class="seg" id="typeSeg"><button class="on" data-type="all">All</button><button data-type="residential">Residential</button><button data-type="commercial">Commercial</button></div>
+      <button class="chip" data-risk="low">Low risk</button><button class="chip" data-risk="medium">Medium</button><button class="chip" data-risk="high">High</button>
+      <select id="sort"><option value="default">Sort: Newest</option><option value="yield">Highest yield</option><option value="risklow">Lowest risk</option><option value="share">Lowest share price</option></select>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="foot"><b>Capital at risk.</b> Yields are on capital left in after refinance (and a separate day-one yield on full capital) — illustrations, not promises; they fall if rates rise or rent drops. Costs assume 10% +VAT management plus insurance. Not financial advice.</div>
+  </div>
+</div>
+
+<!-- DEAL DETAIL -->
+<div class="page" id="page-deal">
+  <div class="wrap">
+    <div class="crumbs"><a data-go="investments">Investments</a> / <span id="d-crumb"></span></div>
+    <div class="dhero">
+      <div class="heroimg" id="d-img"><span class="tag" id="d-tag"></span></div>
+      <div class="herobuy card">
+        <span class="risk" id="d-risk"></span>
+        <h1 class="disp" id="d-title"></h1>
+        <div class="loc" id="d-loc"></div>
+        <div class="eyebrow">Share price</div><div class="bigprice" id="d-price"></div>
+        <div class="prog" id="d-prog" style="margin:10px 0 12px"></div>
+        <div class="closes" id="d-closes" style="margin-bottom:14px"></div>
+        <a class="btn" style="width:100%" id="d-invest">Invest in this deal</a>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">Minimum one share. You reserve now; funds taken once the raise completes.</div>
+      </div>
+    </div>
+
+    <div class="vid sm" style="margin-bottom:16px"><div class="vtag">Walkthrough</div><div class="play"></div><div class="vcap">▶ Watch a walkthrough of this deal</div></div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h2>Your income — earning from day one</h2>
+      <div class="grid2">
+        <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--clay)">
+          <div class="eyebrow" style="color:var(--clay)">From day one</div><div class="bigprice" id="d-dayyield"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">on your <b style="color:var(--ink)">full capital</b>, while we refurbish &amp; refinance · <span id="d-dayper"></span>/share/yr</div>
+        </div>
+        <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--sage);background:var(--sageBg)">
+          <div class="eyebrow" style="color:var(--sage)">After refinance</div><div class="bigprice" id="d-refiyield"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">on the <b style="color:var(--ink)">capital left in</b>, once <span id="d-capback"></span> is returned · <span id="d-refiper"></span>/share/yr</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.5;margin:14px 0 0">No dead period — the property is tenanted, so you earn from completion. Income is higher in pounds before refinance; after, it's lower because loan interest is paid, but most of your capital is back with you.</p>
+    </div>
+
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="card">
+        <h2>Model your stake</h2>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div class="stepper"><button id="minus">−</button><input id="shares" value="5" inputmode="numeric"><button id="plus">+</button></div>
+          <div style="font-size:12px;color:var(--muted)">shares × <span id="d-price2"></span><br><b id="m-total" style="color:var(--ink)"></b> total</div>
+        </div>
+        <div class="kv"><span>Capital back at refinance</span><b id="m-cashout"></b></div>
+        <div class="kv"><span>Stays invested</span><b id="m-leftin"></b></div>
+        <div class="kv"><span>Income from day one</span><b id="m-day"></b></div>
+        <div class="kv"><span>Income after refinance</span><b id="m-income"></b></div>
+        <div class="kv"><span>Projected total back <span style="color:var(--muted)">(5 yrs)</span></span><b id="m-total5"></b></div>
+        <a class="btn" style="width:100%;margin-top:14px" id="m-invest">Invest <span id="m-sh">5</span> shares</a>
+      </div>
+      <div class="card">
+        <h2>Timeline</h2>
+        <div class="timeline"><div class="tline"></div>
+          <div class="tstep"><div class="dot" style="background:var(--ink)"></div><div><h4>Purchase completes</h4><div class="when">Month 0</div><p>Bought outright — already tenanted, so income starts day one.</p></div></div>
+          <div class="tstep"><div class="dot" style="background:var(--amber)"></div><div><h4>Works</h4><div class="when">Early months</div><p id="d-works"></p></div></div>
+          <div class="tstep"><div class="dot" style="background:var(--clay)"></div><div><h4>Refinance — capital returned</h4><div class="when" id="d-loanmo"></div><p>Remortgage at 70% LTV; the bulk of your capital returned.</p></div></div>
+          <div class="tstep"><div class="dot" style="background:var(--sage)"></div><div><h4>Hold &amp; earn</h4><div class="when">Ongoing</div><p>Rent runs against the loan; the balance is yours.</p></div></div>
+          <div class="tstep"><div class="dot" style="background:var(--teal)"></div><div><h4>Exit</h4><div class="when">Target 3–5 years</div><p>Sale or final refinance returns remaining capital plus growth.</p></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h2>Your commitment &amp; getting your money back</h2>
+      <div class="grid2">
+        <ul style="margin:0;padding:0;list-style:none;font-size:12.5px;line-height:1.5">
+          <li style="margin-bottom:7px">⏳ <b>Expected term:</b> bulk of capital back at refinance; remainder to exit, target <b>3–5 years</b>.</li>
+          <li style="margin-bottom:7px">📈 <b>Income</b> paid throughout the hold.</li>
+          <li>🔒 <b>While invested</b>, your money works in property — treat it as committed, not instant-access.</li>
+        </ul>
+        <div class="note"><b>Requesting your money back.</b> Ask to exit any time. Funds release after notice — <b>minimum 1 month, up to 6 months</b> — the window we use to transfer your shares to a waiting investor. Redemption depends on finding that buyer, so it isn't guaranteed on demand.</div>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="card"><h2>The deal, in full</h2><div id="d-breakdown"></div></div>
+      <div class="card"><h2 id="d-riskwhy"></h2><ul id="d-reasons" style="margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)"></ul>
+        <div style="height:1px;background:var(--rule);margin:12px 0"></div>
+        <ul style="margin:0;padding:0;list-style:none;font-size:12px;color:var(--ink)">
+          <li style="margin-bottom:6px">• <b>Still capital at risk.</b> Values can fall; you could get back less.</li>
+          <li style="margin-bottom:6px">• <b>Leverage &amp; rates.</b> After refinance, income after interest is thin and falls if rates rise.</li>
+          <li>• <b>Liquidity.</b> Exit needs a buyer for your shares — not instant.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><b>Capital at risk.</b> Illustrations using assumed costs (10% +VAT management plus insurance), not promises. Redemption subject to notice and finding a buyer. Not financial advice. Amco co-invests 25%.</div>
+  </div>
+</div>
+
+<!-- BUILDER -->
+<div class="page" id="page-builder">
+  <div class="wrap">
+    <div class="head"><div class="eyebrow" style="color:var(--clay)">Explore</div><h1 class="disp" style="font-size:30px;margin:6px 0 0">Investment builder</h1>
+      <p class="lead" style="margin-top:10px">Enter what you could invest and see which live deals you could buy into. This shows what fits — it isn't a recommendation or advice.</p></div>
+    <div class="card">
+      <div class="binput">
+        <div><div class="eyebrow" style="margin-bottom:6px">Amount available</div><div class="bfield"><span style="color:var(--muted)">£</span> <input id="b-amount" value="5000" inputmode="numeric"></div></div>
+        <div><div class="eyebrow" style="margin-bottom:6px">Risk comfort</div>
+          <select id="b-risk"><option value="all">Any</option><option value="low">Low only</option><option value="medium">Up to medium</option><option value="high">Up to high</option></select></div>
+      </div>
+      <div class="bres" id="b-results"></div>
+    </div>
+    <div class="foot"><b>Not advice.</b> The builder illustrates which deals you could buy a share in at your chosen amount. Capital at risk. Figures are illustrations.</div>
+  </div>
+</div>
+
+<!-- INVEST STUB -->
+<div class="page" id="page-invest">
+  <div class="wrap" style="padding-top:30px">
+    <div class="card" style="max-width:520px;margin:0 auto">
+      <div class="eyebrow" style="color:var(--clay)">Confirm your investment</div>
+      <h1 class="disp" style="font-size:23px;margin:8px 0 4px" id="i-title"></h1>
+      <div class="bigprice" id="i-total" style="margin:8px 0 4px"></div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:18px" id="i-line"></div>
+
+      <div style="border:1px solid var(--rule);border-left:3px solid var(--clay);border-radius:12px;padding:16px;margin-bottom:16px">
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px">Before you commit — the honest version</div>
+        <p style="font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.5">Property rises and falls. Here's exactly what you're taking on. Please read it.</p>
+        <ul style="margin:0;padding:0;list-style:none;display:grid;gap:9px;font-size:12.5px;line-height:1.45">
+          <li><b>Your capital is at risk.</b> You could get back less than you invest — and in a bad case, lose it all.</li>
+          <li><b>Your money is committed.</b> To leave, you give 1–6 months' notice and we find a buyer for your shares. It isn't instant.</li>
+          <li><b>Figures are illustrations, not promises.</b> No return shown here is guaranteed.</li>
+          <li><b>We don't advise you.</b> Whether this is right for you is your own decision.</li>
+        </ul>
+      </div>
+
+      <label class="ack" style="margin-bottom:12px;font-size:13px"><input type="checkbox" id="i-ack"> I've read the above and I understand what I'm taking on.</label>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px">The full detail is in our <a style="color:var(--clay);cursor:pointer">Terms &amp; investment risk summary</a>.</div>
+
+      <a class="btn" style="width:100%" id="i-confirm" disabled>Reserve my shares</a>
+      <div class="note" style="margin-top:12px;font-size:11.5px">No money is taken yet. Once Amco is authorised, this is where the ID check and payment will sit. For now it reserves your shares.</div>
+      <div id="i-done" style="display:none;color:var(--sage);font-weight:600;font-size:13px;margin-top:12px">✓ Reserved. We'll be in touch when the raise completes.</div>
+      <a class="btn btn-ghost" style="width:100%;margin-top:10px" data-go="investments">Back to investments</a>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING -->
+<!-- SIGN UP / LOG IN -->
+<div class="page" id="page-signin">
+  <div class="wrap" style="max-width:440px">
+    <div class="card" style="margin-top:24px">
+      <div class="eyebrow" style="color:var(--clay)" id="auth-eyebrow">Create your account</div>
+      <h1 class="disp" style="font-size:24px;margin:6px 0 4px" id="auth-title">Join the demo</h1>
+      <p style="font-size:12.5px;color:var(--muted);margin:0 0 16px" id="auth-sub">Set up an account to browse deals, reserve shares and track a portfolio. This is a prototype — please use a throwaway password, not one you use elsewhere.</p>
+      <label class="bfield2" id="row-name"><span>Full name</span><input id="au-name" placeholder="Your name"></label>
+      <label class="bfield2"><span>Email</span><input id="au-email" type="email" placeholder="you@example.com" autocomplete="off"></label>
+      <label class="bfield2"><span>Password</span><input id="au-pass" type="password" placeholder="A throwaway password" autocomplete="off"></label>
+      <div id="auth-err" style="display:none;color:var(--danger);font-size:12px;font-weight:600;margin:4px 0 0"></div>
+      <a class="btn" style="width:100%;margin-top:14px" id="au-submit">Create account</a>
+      <div style="text-align:center;margin-top:12px;font-size:12.5px;color:var(--muted)"><span id="auth-switch-text">Already have an account?</span> <span style="color:var(--clay);font-weight:700;cursor:pointer" id="auth-switch">Log in</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-onboarding">
+  <div class="wrap" style="max-width:520px;padding-top:30px">
+    <div class="obar"><div class="ofill" id="ofill"></div></div>
+    <div class="card">
+      <!-- step 1 -->
+      <div class="ostep show" data-step="1">
+        <div class="eyebrow" style="color:var(--clay)">Step 1 of 3 · Create account</div>
+        <h2 style="margin:8px 0 16px">Create your account</h2>
+        <label class="ofield"><span>Full name</span><input id="ob-name" placeholder="Jordan Smith"></label>
+        <label class="ofield"><span>Email</span><input id="ob-email" placeholder="you@email.com"></label>
+        <label class="ofield"><span>Password</span><input type="password" placeholder="••••••••"></label>
+        <div class="orow"><a class="btn" style="flex:1" data-next="2">Continue</a></div>
+      </div>
+      <!-- step 2 -->
+      <div class="ostep" data-step="2">
+        <div class="eyebrow" style="color:var(--clay)">Step 2 of 3 · Investor type</div>
+        <h2 style="margin:8px 0 6px">How would you describe yourself?</h2>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 14px">This sets which investments you can access and the protections that apply to you.</p>
+        <div class="opt sel" data-pick><h4>Retail investor</h4><p>Most people. You get the strongest protections, and high-risk investments come with limits and extra warnings.</p></div>
+        <div class="opt" data-pick><h4>Self-certified sophisticated investor</h4><p>You have relevant investing experience and can self-certify it.</p></div>
+        <div class="opt" data-pick><h4>High-net-worth investor</h4><p>You meet the income or net-asset thresholds to certify as high-net-worth.</p></div>
+        <div class="orow"><a class="btn btn-ghost" data-back="1">Back</a><a class="btn" style="flex:1" data-next="3">Continue</a></div>
+      </div>
+      <!-- step 3 -->
+      <div class="ostep" data-step="3">
+        <div class="eyebrow" style="color:var(--clay)">Step 3 of 3 · Verify your identity</div>
+        <h2 style="margin:8px 0 6px">One last thing</h2>
+        <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 14px">We confirm every investor's identity before any money moves — a quick ID check you'll complete when you make your first investment. For now, your account is ready.</p>
+        <div class="note" style="margin-bottom:16px">Nothing is taken yet. You can browse, model stakes and reserve shares. We'll walk you through exactly what you're taking on the moment you choose to invest in a deal.</div>
+        <div class="orow"><a class="btn btn-ghost" data-back="2">Back</a><a class="btn" style="flex:1" id="ob-finish">Finish &amp; go to my dashboard</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- YOUR INVESTMENTS DASHBOARD -->
+<div class="page" id="page-portfolio">
+  <div class="wrap">
+    <div class="head" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px"><div><div class="eyebrow" style="color:var(--clay)">Your investments</div><h1 class="disp" id="pf-greet" style="font-size:30px;margin:6px 0 0">Your portfolio</h1></div><span class="signout" id="pf-signout">Switch / sign out</span></div>
+    <div class="sumgrid" id="pf-summary"></div>
+    <div id="pf-holdings" style="display:grid;gap:16px;padding-bottom:8px"></div>
+    <div class="foot"><b>Capital at risk.</b> Statements use assumed costs (10% +VAT management plus insurance) and are illustrations. Income and capital returned depend on each deal performing. Redemption needs notice and a buyer. Not financial advice.</div>
+  </div>
+</div>
+
+<!-- SIMPLE STUBS -->
+<div class="page" id="page-completed"><div class="wrap" style="padding-top:40px"><div class="card" style="text-align:center;padding:40px"><div class="eyebrow" style="color:var(--clay)">Completed</div><h1 class="disp" style="font-size:24px;margin:10px 0 6px">Filled investments</h1><p style="color:var(--muted);font-size:14px;max-width:420px;margin:0 auto">Completed deals, how fast they funded, and a "notify me when a share reopens" option. Coming next.</p><a class="btn" style="margin-top:18px" data-go="investments">Browse investments</a></div></div></div>
+
+<script>
+(function(){
+  var root=document.getElementById('amco-app');
+  var f=function(n){return '£'+Math.round(n).toLocaleString('en-GB');};
+  var f2=function(n){return '£'+n.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});};
+
+  var DEALS=[
+    { id:'derby', title:'Derby House, Wigan', loc:'2-bed end-of-terrace · tenanted from day one', tag:'Residential · 2-bed', type:'residential',
+      desc:'Light refurb, stable existing income, refinance to release the bulk of capital.', grad:'linear-gradient(135deg,#3F7A5C,#2C5D6B)',
+      risk:'low', riskN:1, closesDays:9, fundingPct:41, sharesLeft:59, sharesTotal:100, sharePrice:1088.50, dayYield:'8.0%', refiYield:'14.2%', capBack:'72%',
+      loanMonths:'By month 10', worksTxt:'£4,000 light refurbishment to secure value and income.',
+      per:{cashout:788.90,leftIn:299.60,day:86.76,refi:42.49,total5:1529.20},
+      breakdown:[['Agreed purchase price','£97,000'],['SDLT','£4,850'],['Legals','£3,000'],['Works','£4,000'],['Total raised','£108,850'],['Value after works','£115,000'],['Refinance loan (70%)','£80,500'],['Income (stabilised)','£850 pcm']],
+      reasons:['✓ Tenanted and producing income from day one.','✓ Small, light refurbishment (£4,000).','✓ Single simple let in an established rental area.'] },
+    { id:'l21', title:'L21 Portfolio', loc:'10 houses, Liverpool L21 · single block buy', tag:'Residential · portfolio', type:'residential',
+      desc:'Ten tenanted houses bought together, refurbished, then refinanced as one.', grad:'linear-gradient(135deg,#2C5D6B,#14302E)',
+      risk:'medium', riskN:2, closesDays:21, fundingPct:18, sharesLeft:820, sharesTotal:1000, sharePrice:1179.50, dayYield:'4.7%', refiYield:'16.1%', capBack:'79%',
+      loanMonths:'By month 12', worksTxt:'£65,000 of works across ten houses to lift income.',
+      per:{cashout:926.10,leftIn:253.40,day:55.70,refi:40.69,total5:1749.20},
+      breakdown:[['Agreed purchase price','£1,050,000'],['SDLT','£52,500'],['Legals','£12,000'],['Works','£65,000'],['Total raised','£1,179,500'],['Value after works','£1,350,000'],['Refinance loan (70%)','£945,000'],['Income (stabilised)','£107,000 / yr']],
+      reasons:['✓ Ten tenanted houses — income diversified across units.','• Larger refurbishment (£65,000) adds works risk.','• Portfolio refinance depends on valuation across all units.'] },
+    { id:'pine', title:'Pine Court, Southport', loc:'14 converted flats · block of flats', tag:'Residential · conversion', type:'residential',
+      desc:'Block of 14 flats, modest works to lift income, refinanced on the uplift.', grad:'linear-gradient(135deg,#B5532E,#8a4424)',
+      risk:'high', riskN:3, closesDays:4, fundingPct:66, sharesLeft:340, sharesTotal:1000, sharePrice:1030.00, dayYield:'7.0%', refiYield:'17.5%', capBack:'80%',
+      loanMonths:'By month 10', worksTxt:'£20,000 works to lift income across the block.',
+      per:{cashout:823.20,leftIn:206.80,day:71.80,refi:36.16,total5:1554.80},
+      breakdown:[['Agreed purchase price','£920,000'],['SDLT','£82,000'],['Legals','£8,000'],['Works','£20,000'],['Total raised','£1,030,000'],['Value after works','£1,200,000'],['Refinance loan (70%)','£840,000'],['Income (stabilised)','£97,000 / yr']],
+      reasons:['• Block of 14 converted flats — conversion &amp; leasehold complexity.','• Higher purchase costs (SDLT £82,000).','• Income uplift relies on works and re-letting.'] }
+  ];
+  var byId={}; DEALS.forEach(function(d){byId[d.id]=d;});
+  var NOW=Date.now();
+  DEALS.forEach(function(d){ d.deadline = NOW + d.closesDays*86400000; });
+  function leftStr(dl){ var diff=dl-Date.now(); if(diff<=0) return 'Closed';
+    var d=Math.floor(diff/86400000), h=Math.floor((diff%86400000)/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000);
+    if(diff<86400000){ return '⏳ '+h+'h '+m+'m '+s+'s'; } return d+'d '+h+'h'; }
+  function dateStr(dl){ return new Date(dl).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+  function updateCountdowns(){ root.querySelectorAll('.closes[data-dl]').forEach(function(e){ var dl=Number(e.dataset.dl); var cd=e.querySelector('.cd'); if(cd) cd.textContent=leftStr(dl);
+    var diff=dl-Date.now(), dd=diff/86400000;
+    e.style.color = dd<3 ? 'var(--clay)' : 'var(--muted)';
+    e.style.fontWeight = (diff>0 && diff<86400000) ? '800' : ''; }); }
+
+  /* router */
+  function go(name){
+    if(name==='portfolio' && !state.loggedIn){ name='signin'; }
+    if(name==='portfolio') renderPortfolio();
+    root.querySelectorAll('.page').forEach(function(p){p.classList.remove('show');});
+    var el=root.querySelector('#page-'+name); if(el) el.classList.add('show');
+    root.querySelectorAll('.navlinks a[data-go]').forEach(function(a){a.classList.toggle('active', a.dataset.go===name);});
+    var sc=root.querySelector('.nav'); if(sc) sc.scrollIntoView({block:'start'});
+  }
+  root.addEventListener('click',function(e){
+    var g=e.target.closest('[data-go]'); if(g){ e.preventDefault(); go(g.dataset.go); return; }
+    var a=e.target.closest('[data-auth]'); if(a){ e.preventDefault(); if(state.loggedIn){ go('portfolio'); } else { go('signin'); } }
+  });
+
+  /* list */
+  function riskLabel(r){return r.charAt(0).toUpperCase()+r.slice(1)+' risk';}
+  function renderList(){
+    var list=root.querySelector('#list'); list.innerHTML='';
+    DEALS.forEach(function(d){
+      var el=document.createElement('div'); el.className='lcard';
+      el.dataset.type=d.type; el.dataset.risk=d.riskN; el.dataset.yield=parseFloat(d.refiYield); el.dataset.share=d.sharePrice;
+      el.innerHTML=
+        '<div class="thumb" style="background:'+d.grad+'"><span class="tag">'+d.tag+'</span></div>'+
+        '<div class="lbody"><h3>'+d.title+'</h3><div class="loc">'+d.loc+'</div><div class="desc">'+d.desc+'</div>'+
+        '<div class="stats">'+
+          '<div class="stat"><div class="k">Share price</div><div class="v">'+f(d.sharePrice)+'</div><div class="s">'+d.sharesTotal+' shares · min 1</div></div>'+
+          '<div class="stat"><div class="k">From day one</div><div class="v" style="color:var(--clay)">'+d.dayYield+'</div><div class="s">on full capital</div></div>'+
+          '<div class="stat"><div class="k">After refi</div><div class="v" style="color:var(--sage)">'+d.refiYield+'</div><div class="s">on money left in</div></div>'+
+          '<div class="stat"><div class="k">Capital back</div><div class="v">'+d.capBack+'</div><div class="s">at refinance</div></div>'+
+        '</div></div>'+
+        '<div class="side"><span class="risk '+d.risk+'">'+riskLabel(d.risk)+'</span>'+
+          '<div class="prog">'+d.fundingPct+'% funded<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div></div>'+
+          '<div class="closes" data-dl="'+d.deadline+'">⏳ Closes in <span class="cd">'+leftStr(d.deadline)+'</span></div>'+
+          '<button class="btn invest-btn">Invest</button><button class="btn btn-ghost view-btn" style="font-size:12px">View details</button></div>';
+      el.querySelector('.thumb').onclick=function(){openDeal(d.id);};
+      el.querySelector('.lbody').onclick=function(){openDeal(d.id);};
+      el.querySelector('.view-btn').onclick=function(){openDeal(d.id);};
+      el.querySelector('.invest-btn').onclick=function(){openDeal(d.id);};
+      list.appendChild(el);
+    });
+    applyFilters();
+    updateCountdowns();
+  }
+  var type='all', risks={1:false,2:false,3:false}, riskMap={low:1,medium:2,high:3};
+  function applyFilters(){
+    var any=risks[1]||risks[2]||risks[3], shown=0;
+    root.querySelectorAll('#list .lcard').forEach(function(c){
+      var ok=(type==='all'||c.dataset.type===type)&&(!any||risks[Number(c.dataset.risk)]);
+      c.style.display=ok?'flex':'none'; if(ok)shown++;
+    });
+    root.querySelector('#count').textContent=shown+(shown===1?' investment':' investments');
+  }
+  root.querySelector('#typeSeg').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;this.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');type=b.dataset.type;applyFilters();});
+  root.querySelectorAll('.chip[data-risk]').forEach(function(ch){ch.addEventListener('click',function(){var r=riskMap[ch.dataset.risk];risks[r]=!risks[r];ch.classList.toggle('on',risks[r]);applyFilters();});});
+  root.querySelector('#sort').addEventListener('change',function(){
+    var v=this.value, list=root.querySelector('#list'), arr=Array.prototype.slice.call(list.querySelectorAll('.lcard'));
+    if(v==='yield')arr.sort(function(a,b){return b.dataset.yield-a.dataset.yield;});
+    else if(v==='risklow')arr.sort(function(a,b){return a.dataset.risk-b.dataset.risk;});
+    else if(v==='share')arr.sort(function(a,b){return a.dataset.share-b.dataset.share;});
+    arr.forEach(function(c){list.appendChild(c);});
+  });
+
+  /* detail */
+  var current=null;
+  function openDeal(id){
+    var d=byId[id]; current=d;
+    var q=function(s){return root.querySelector(s);};
+    q('#d-crumb').textContent=d.title; q('#d-tag').textContent=d.tag; q('#d-img').style.background=d.grad;
+    q('#d-risk').className='risk '+d.risk; q('#d-risk').textContent=riskLabel(d.risk);
+    q('#d-title').textContent=d.title; q('#d-loc').textContent=d.loc; q('#d-price').textContent=f2(d.sharePrice);
+    q('#d-prog').innerHTML=d.fundingPct+'% funded · '+d.sharesLeft+' of '+d.sharesTotal+' shares left<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div>';
+    q('#d-closes').setAttribute('data-dl', d.deadline);
+    q('#d-closes').innerHTML='⏳ Open for investment — closes in <span class="cd">'+leftStr(d.deadline)+'</span> <span style="color:var(--muted)">('+dateStr(d.deadline)+')</span>';
+    q('#d-dayyield').textContent=d.dayYield; q('#d-dayper').textContent=f(d.per.day);
+    q('#d-refiyield').textContent=d.refiYield; q('#d-capback').textContent='~'+d.capBack; q('#d-refiper').textContent=f(d.per.refi);
+    q('#d-price2').textContent=f2(d.sharePrice); q('#d-works').textContent=d.worksTxt; q('#d-loanmo').textContent=d.loanMonths;
+    q('#d-riskwhy').innerHTML='Why this is rated <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span>';
+    q('#d-breakdown').innerHTML=d.breakdown.map(function(r){return '<div class="kv"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('');
+    q('#d-reasons').innerHTML=d.reasons.map(function(r){return '<li style="margin-bottom:6px">'+r+'</li>';}).join('');
+    root.querySelector('#shares').value=5; renderStake();
+    updateCountdowns();
+    go('deal');
+  }
+  function renderStake(){
+    if(!current)return; var d=current; var n=Math.max(1,parseInt(root.querySelector('#shares').value)||1);
+    root.querySelector('#shares').value=n; var p=d.per;
+    root.querySelector('#m-total').textContent=f(n*d.sharePrice);
+    root.querySelector('#m-cashout').textContent=f(n*p.cashout);
+    root.querySelector('#m-leftin').textContent=f(n*p.leftIn);
+    root.querySelector('#m-day').innerHTML=f(n*p.day)+'/yr <span style="color:var(--muted);font-weight:600">· '+d.dayYield+' pa</span>';
+    root.querySelector('#m-income').innerHTML=f(n*p.refi)+'/yr <span style="color:var(--muted);font-weight:600">· '+d.refiYield+' pa</span>';
+    root.querySelector('#m-total5').textContent=f(n*p.total5);
+    root.querySelector('#m-sh').textContent=n;
+  }
+  root.querySelector('#plus').onclick=function(){var i=root.querySelector('#shares');i.value=(parseInt(i.value)||0)+1;renderStake();};
+  root.querySelector('#minus').onclick=function(){var i=root.querySelector('#shares');i.value=Math.max(1,(parseInt(i.value)||1)-1);renderStake();};
+  root.querySelector('#shares').oninput=renderStake;
+  root.querySelector('#d-invest').onclick=function(){openInvest(current,5);};
+  root.querySelector('#m-invest').onclick=function(){openInvest(current,Math.max(1,parseInt(root.querySelector('#shares').value)||1));};
+
+  /* invest stub */
+  var curInvest=null;
+  function openInvest(d,n){
+    if(!d)return;
+    curInvest={d:d,n:n};
+    root.querySelector('#i-title').textContent=n+' share'+(n>1?'s':'')+' · '+d.title;
+    root.querySelector('#i-total').textContent=f(n*d.sharePrice);
+    root.querySelector('#i-line').textContent='~'+f(n*d.per.cashout)+' back at refinance · '+f(n*d.per.day)+'/yr income from day one';
+    root.querySelector('#i-done').style.display='none';
+    root.querySelector('#i-ack').checked=false;
+    root.querySelector('#i-confirm').setAttribute('disabled','');
+    go('invest');
+  }
+  root.querySelector('#i-ack').onchange=function(){ root.querySelector('#i-confirm').toggleAttribute('disabled', !this.checked); };
+  root.querySelector('#i-confirm').onclick=function(){ if(this.hasAttribute('disabled')||!curInvest)return;
+    if(!state.loggedIn){ PENDING={id:curInvest.d.id, n:curInvest.n}; setAuthMode('signup'); go('signin'); return; }
+    addHolding(curInvest.d.id, curInvest.n);
+    var done=root.querySelector('#i-done');
+    done.innerHTML='\u2713 Reserved '+curInvest.n+' share'+(curInvest.n>1?'s':'')+' in '+curInvest.d.title+'. It\u2019s now in your portfolio. <span style="color:var(--clay);font-weight:700;cursor:pointer" data-go="portfolio">View portfolio \u2192</span>';
+    done.style.display='block';
+  };
+
+  /* builder */
+  function renderBuilder(){
+    var amt=parseFloat(root.querySelector('#b-amount').value)||0;
+    var rf=root.querySelector('#b-risk').value;
+    var maxRisk={all:3,low:1,medium:2,high:3}[rf];
+    var box=root.querySelector('#b-results'); box.innerHTML='';
+    var matches=DEALS.filter(function(d){return d.sharePrice<=amt && d.riskN<=maxRisk;});
+    if(matches.length===0){
+      var cheapest=DEALS.slice().sort(function(a,b){return a.sharePrice-b.sharePrice;})[0];
+      box.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 2px">From '+f(cheapest.sharePrice)+' you could buy a share in '+cheapest.title+'. Increase your amount to see deals you can invest in.</div>';
+      return;
+    }
+    matches.forEach(function(d){
+      var sh=Math.floor(amt/d.sharePrice);
+      var el=document.createElement('div'); el.className='brow';
+      el.innerHTML='<div style="flex:1 1 200px"><div style="font-weight:700;font-family:\'Space Grotesk\',sans-serif">'+d.title+' <span class="risk '+d.risk+'" style="font-size:9.5px;margin-left:6px">'+riskLabel(d.risk)+'</span></div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-top:3px">'+sh+' share'+(sh>1?'s':'')+' ('+f(sh*d.sharePrice)+') · '+d.dayYield+' day one · '+d.refiYield+' after refi · closes in '+leftStr(d.deadline)+'</div></div>'+
+        '<div style="display:flex;gap:8px"><button class="btn btn-ghost b-view" style="font-size:12px" data-id="'+d.id+'">View</button><button class="btn b-inv" style="font-size:12px" data-id="'+d.id+'" data-sh="'+sh+'">Invest</button></div>';
+      box.appendChild(el);
+    });
+    box.querySelectorAll('.b-view').forEach(function(b){b.onclick=function(){openDeal(b.dataset.id);};});
+    box.querySelectorAll('.b-inv').forEach(function(b){b.onclick=function(){openInvest(byId[b.dataset.id],Math.max(1,parseInt(b.dataset.sh)||1));};});
+  }
+  root.querySelector('#b-amount').oninput=renderBuilder;
+  root.querySelector('#b-risk').onchange=renderBuilder;
+
+  /* ---- accounts & onboarding ---- */
+  var state={ loggedIn:false, name:'', email:'' };
+
+  /* safe storage: persists on a deployed site, silently no-ops in sandboxed previews */
+  var Store={ get:function(k){ try{return window.localStorage.getItem(k);}catch(e){return null;} },
+              set:function(k,v){ try{window.localStorage.setItem(k,v);}catch(e){} },
+              del:function(k){ try{window.localStorage.removeItem(k);}catch(e){} } };
+
+  var PENDING=null; // a reserve waiting for the user to sign in
+
+  function loadUsers(){ try{return JSON.parse(Store.get('amco_users')||'{}');}catch(e){return {};} }
+  function saveUsers(u){ Store.set('amco_users', JSON.stringify(u)); }
+  function hash(s){ var h=5381,i=s.length; while(i) h=(h*33)^s.charCodeAt(--i); return (h>>>0).toString(16); }
+
+  var authMode='signup';
+  function setAuthMode(m){ authMode=m;
+    root.querySelector('#auth-eyebrow').textContent = m==='signup'?'Create your account':'Welcome back';
+    root.querySelector('#auth-title').textContent = m==='signup'?'Join the demo':'Log in';
+    root.querySelector('#au-submit').textContent = m==='signup'?'Create account':'Log in';
+    root.querySelector('#row-name').style.display = m==='signup'?'block':'none';
+    root.querySelector('#auth-switch-text').textContent = m==='signup'?'Already have an account?':'New here?';
+    root.querySelector('#auth-switch').textContent = m==='signup'?'Log in':'Create one';
+    root.querySelector('#auth-err').style.display='none';
+  }
+  function authErr(msg){ var e=root.querySelector('#auth-err'); e.textContent=msg; e.style.display='block'; }
+  root.querySelector('#auth-switch').onclick=function(){ setAuthMode(authMode==='signup'?'login':'signup'); };
+  root.querySelector('#au-submit').onclick=function(){
+    var name=(root.querySelector('#au-name').value||'').trim();
+    var email=(root.querySelector('#au-email').value||'').trim().toLowerCase();
+    var pass=root.querySelector('#au-pass').value||'';
+    if(!email||!pass){ authErr('Please enter an email and password.'); return; }
+    var users=loadUsers();
+    if(authMode==='signup'){
+      if(!name){ authErr('Please enter your name.'); return; }
+      if(users[email]){ authErr('That email already has an account — try logging in.'); return; }
+      users[email]={ name:name, email:email, pass:hash(pass), holdings:[] };
+      saveUsers(users); setUser(users[email]);
+    } else {
+      var u=users[email];
+      if(!u || u.pass!==hash(pass)){ authErr('Email or password not recognised.'); return; }
+      setUser(u);
+    }
+    root.querySelector('#au-name').value=''; root.querySelector('#au-email').value=''; root.querySelector('#au-pass').value='';
+    if(PENDING){ addHolding(PENDING.id, PENDING.n); PENDING=null; }
+    go('portfolio');
+  };
+  function setUser(u){ state.loggedIn=true; state.name=u.name; state.email=u.email; HOLDINGS=u.holdings||[]; setAuthUI(); Store.set('amco_session', u.email); }
+  function persistUser(){ if(!state.email)return; var users=loadUsers(); if(users[state.email]){ users[state.email].holdings=HOLDINGS; saveUsers(users); } }
+  function addHolding(id,n){ var ex=null; HOLDINGS.forEach(function(h){ if(h.id===id) ex=h; });
+    if(ex){ ex.shares+=n; } else { HOLDINGS.push({id:id,shares:n,stage:1,monthsHeld:0}); } persistUser(); }
+  function signOut(){ state.loggedIn=false; state.name=''; state.email=''; HOLDINGS=[]; setAuthUI(); Store.del('amco_session'); setAuthMode('login'); go('home'); }
+  function loadSession(){ var em=Store.get('amco_session'); if(!em)return; var u=loadUsers()[em]; if(u) setUser(u); }
+
+  function setAuthUI(){
+    var el=root.querySelector('#nav-auth');
+    if(state.loggedIn){ el.textContent='Hi, '+(state.name.split(' ')[0]||'investor'); }
+    else { el.textContent='Sign in'; }
+  }
+  function showStep(n){
+    root.querySelectorAll('#page-onboarding .ostep').forEach(function(s){ s.classList.toggle('show', Number(s.dataset.step)===n); });
+    root.querySelector('#ofill').style.width=(n/3*100)+'%';
+  }
+  root.querySelectorAll('#page-onboarding [data-next]').forEach(function(b){ b.onclick=function(){ showStep(Number(b.dataset.next)); }; });
+  root.querySelectorAll('#page-onboarding [data-back]').forEach(function(b){ b.onclick=function(){ showStep(Number(b.dataset.back)); }; });
+  root.querySelectorAll('#page-onboarding .opt[data-pick]').forEach(function(o){ o.onclick=function(){ root.querySelectorAll('#page-onboarding .opt').forEach(function(x){x.classList.remove('sel');}); o.classList.add('sel'); }; });
+  var obf=root.querySelector('#ob-finish'); if(obf) obf.onclick=function(){ go('signin'); };
+  var px=root.querySelector('#proto-x'); if(px) px.onclick=function(){ root.querySelector('#proto-banner').style.display='none'; };
+
+  /* ---- portfolio ---- */
+  var HOLDINGS=[];
+  var STMT={ derby:{rentMo:850, insYr:300, intYr:4427.50}, l21:{rentMo:5416.67, insYr:1500, intYr:51975}, pine:{rentMo:7083.33, insYr:3000, intYr:46200} };
+  function statement(h){
+    var d=byId[h.id], s=STMT[h.id], frac=h.shares/d.sharesTotal;
+    var gross=s.rentMo*frac, mgmt=gross*0.12, ins=(s.insYr/12)*frac, intr=(h.stage>=2?(s.intYr/12)*frac:0);
+    return { gross:gross, mgmt:mgmt, ins:ins, intr:intr, net:gross-mgmt-ins-intr, hasLoan:h.stage>=2 };
+  }
+  function renderPortfolio(){
+    root.querySelector('#pf-greet').textContent = state.name ? ('Welcome back, '+state.name.split(' ')[0]) : 'Your portfolio';
+    if(!HOLDINGS.length){
+      root.querySelector('#pf-summary').innerHTML='';
+      root.querySelector('#pf-holdings').innerHTML='<div class="card" style="text-align:center;padding:38px"><div class="eyebrow" style="color:var(--clay)">Nothing here yet</div><h2 style="margin:10px 0 6px">You haven\u2019t invested yet</h2><p style="color:var(--muted);font-size:13.5px;max-width:380px;margin:0 auto 16px">Browse the live deals, model a stake, and reserve your shares. Your holdings and monthly income will show up here.</p><a class="btn" data-go="investments">Browse investments</a></div>';
+      return;
+    }
+    var invested=0, returned=0, incomeToDate=0;
+    HOLDINGS.forEach(function(h){ var d=byId[h.id]; invested+=h.shares*d.sharePrice; if(h.stage>=2) returned+=h.shares*d.per.cashout; incomeToDate+=statement(h).net*h.monthsHeld; });
+    var working=invested-returned;
+    var sum=[['Total invested',f(invested)],['Capital returned',f(returned)],['Still working',f(working)],['Income to date',f(incomeToDate)]];
+    root.querySelector('#pf-summary').innerHTML=sum.map(function(s){return '<div class="card sum" style="padding:14px"><div class="k">'+s[0]+'</div><div class="v">'+s[1]+'</div></div>';}).join('');
+
+    root.querySelector('#pf-holdings').innerHTML=HOLDINGS.map(function(h){
+      var d=byId[h.id], st=statement(h);
+      var stageTxt = h.stage>=2 ? 'Stage 2 · Refinanced — capital returned, earning' : 'Stage 1 · Bought & earning — refinance to come';
+      return '<div class="card">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
+          '<div><h2 style="margin:0">'+d.title+'</h2><div style="font-size:12px;color:var(--muted);margin-top:2px">'+h.shares+' shares · '+f(h.shares*d.sharePrice)+' invested</div></div>'+
+          '<span class="risk '+d.risk+'">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+' risk</span>'+
+        '</div>'+
+        '<div class="stage"><div class="stagepip on"></div><div class="stagepip '+(h.stage>=2?'on':'')+'"></div></div>'+
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">'+stageTxt+'</div>'+
+        '<div class="grid2">'+
+          '<div class="stmt">'+
+            '<div class="eyebrow" style="margin-bottom:8px">This month\u2019s statement</div>'+
+            '<div class="kv"><span>Your rent share</span><b>'+f2(st.gross)+'</b></div>'+
+            '<div class="kv"><span>− Management (10% +VAT)</span><b>−'+f2(st.mgmt)+'</b></div>'+
+            '<div class="kv"><span>− Insurance</span><b>−'+f2(st.ins)+'</b></div>'+
+            (st.hasLoan?'<div class="kv"><span>− Mortgage interest</span><b>−'+f2(st.intr)+'</b></div>':'<div class="kv"><span>Mortgage interest</span><b style="color:var(--muted)">— pre-refinance</b></div>')+
+            '<div class="kv net"><span>Net income to you</span><b>'+f2(st.net)+'</b></div>'+
+          '</div>'+
+          '<div>'+
+            '<div class="eyebrow" style="margin-bottom:8px">Your position</div>'+
+            '<div class="kv"><span>Capital returned</span><b>'+(h.stage>=2?f(h.shares*d.per.cashout):'£0 — at refinance')+'</b></div>'+
+            '<div class="kv"><span>Still working</span><b>'+f(h.shares*d.sharePrice-(h.stage>=2?h.shares*d.per.cashout:0))+'</b></div>'+
+            '<div class="kv"><span>Income / yr</span><b>'+f(st.net*12)+'</b></div>'+
+            '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-ghost vd" style="font-size:12px" data-id="'+h.id+'">View deal</button><button class="btn redeem" style="font-size:12px;background:var(--ink);border-color:var(--ink)" data-id="'+h.id+'">Request money back</button></div>'+
+            '<div class="redeemnote" data-for="'+h.id+'" style="display:none;font-size:11.5px;color:var(--sage);font-weight:600;margin-top:10px">✓ Request logged. We aim to release funds within 1–6 months once your shares are matched to a buyer.</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    root.querySelectorAll('#pf-holdings .vd').forEach(function(b){ b.onclick=function(){ openDeal(b.dataset.id); }; });
+    root.querySelectorAll('#pf-holdings .redeem').forEach(function(b){ b.onclick=function(){ root.querySelector('.redeemnote[data-for="'+b.dataset.id+'"]').style.display='block'; }; });
+  }
+
+  /* ===================== SHARED DATA (Supabase) =====================
+     Paste the SAME Supabase URL + anon key here as in amco-admin.html, so
+     deals published in admin appear for investors on every device. Leave
+     empty to fall back to this browser only. Setup SQL is in DEPLOY.md. */
+  var SUPABASE_URL = 'https://ubrhscfdlzmwkdmfnbkl.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVicmhzY2ZkbHptd2tkbWZuYmtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTkyMjcsImV4cCI6MjA5NzczNTIyN30.pTSk3qNMZW5IQOwVWlpogqLur8M2m5_XxR8QGxM-nDo';
+  var DB = (function(){
+    var TABLE='deals';
+    var on = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+    function hdr(){ return { apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+SUPABASE_ANON_KEY, 'Content-Type':'application/json' }; }
+    function localList(){ try{return JSON.parse(window.localStorage.getItem('amco_deals')||'[]');}catch(e){return [];} }
+    function list(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE+'?select=data&order=created_at.asc',{headers:hdr()})
+        .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(rows){ return rows.map(function(x){return x.data;}); })
+        .catch(function(){ return localList(); }); } return Promise.resolve(localList()); }
+    return { list:list, on:on };
+  })();
+
+  renderList(); renderBuilder(); loadSession(); setAuthUI(); setAuthMode('signup');
+  root.querySelector('#pf-signout').onclick=signOut;
+  Promise.resolve(DB.list()).then(function(deals){
+    var added=false;
+    (deals||[]).forEach(function(o){ if(!o||!o.id||o.archived||byId[o.id])return; o.deadline=o.closeAt||(NOW+((o.closesDays||14)*86400000)); DEALS.push(o); byId[o.id]=o; if(o.stmt) STMT[o.id]=o.stmt; added=true; });
+    if(added){ renderList(); updateCountdowns(); }
+  }).catch(function(){});
+  updateCountdowns(); setInterval(updateCountdowns, 1000);
+})();
+</script>
+</div>
