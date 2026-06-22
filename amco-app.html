@@ -174,7 +174,21 @@
 </div>
 
 <!-- HOME -->
-<div class="page show" id="page-home">
+<!-- WELCOME (gate) -->
+<div class="page" id="page-welcome">
+  <div class="wrap" style="max-width:540px;text-align:center;padding-top:48px">
+    <div class="eyebrow" style="color:var(--clay)">Welcome to Amco Investors</div>
+    <h1 class="disp" style="font-size:40px;margin:14px 0 12px">Property investment, opened up.</h1>
+    <p class="lead" style="margin:0 auto 26px">Own a share of real, income-producing property from a single share. Create your free account to explore the live deals.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a class="btn" id="w-signup" style="padding:13px 26px">Create your account</a>
+      <a class="btn btn-ghost" id="w-login" style="padding:13px 26px">Log in</a>
+    </div>
+    <p style="font-size:11.5px;color:var(--muted);margin-top:18px">A prototype demo — no real money, and please use a throwaway password.</p>
+  </div>
+</div>
+
+<div class="page" id="page-home">
   <div class="wrap hero">
     <div class="eyebrow" style="color:var(--clay)">Accessible property investment</div>
     <h1 class="disp">Property investment,<br>opened up.</h1>
@@ -570,18 +584,22 @@
     e.style.fontWeight = (diff>0 && diff<86400000) ? '800' : ''; }); }
 
   /* router */
+  function setChrome(){ var nl=root.querySelector('.navlinks'); if(nl) nl.style.display = state.loggedIn ? '' : 'none'; }
   function go(name){
-    if(name==='portfolio' && !state.loggedIn){ name='signin'; }
+    if(!state.loggedIn && name!=='welcome' && name!=='signin'){ name='welcome'; }
     if(name==='portfolio') renderPortfolio();
     root.querySelectorAll('.page').forEach(function(p){p.classList.remove('show');});
     var el=root.querySelector('#page-'+name); if(el) el.classList.add('show');
     root.querySelectorAll('.navlinks a[data-go]').forEach(function(a){a.classList.toggle('active', a.dataset.go===name);});
+    setChrome();
     var sc=root.querySelector('.nav'); if(sc) sc.scrollIntoView({block:'start'});
   }
   root.addEventListener('click',function(e){
     var g=e.target.closest('[data-go]'); if(g){ e.preventDefault(); go(g.dataset.go); return; }
-    var a=e.target.closest('[data-auth]'); if(a){ e.preventDefault(); if(state.loggedIn){ go('portfolio'); } else { go('signin'); } }
+    var a=e.target.closest('[data-auth]'); if(a){ e.preventDefault(); if(state.loggedIn){ go('portfolio'); } else { setAuthMode('login'); go('signin'); } }
   });
+  root.querySelector('#w-signup').onclick=function(){ setAuthMode('signup'); go('signin'); };
+  root.querySelector('#w-login').onclick=function(){ setAuthMode('login'); go('signin'); };
 
   /* list */
   function riskLabel(r){return r.charAt(0).toUpperCase()+r.slice(1)+' risk';}
@@ -760,14 +778,16 @@
       setUser(u);
     }
     root.querySelector('#au-name').value=''; root.querySelector('#au-email').value=''; root.querySelector('#au-pass').value='';
+    var hadPending=!!PENDING;
     if(PENDING){ addHolding(PENDING.id, PENDING.n); PENDING=null; }
-    go('portfolio');
+    go(hadPending?'portfolio':'home');
   };
   function setUser(u){ state.loggedIn=true; state.name=u.name; state.email=u.email; HOLDINGS=u.holdings||[]; setAuthUI(); Store.set('amco_session', u.email); }
   function persistUser(){ if(!state.email)return; var users=loadUsers(); if(users[state.email]){ users[state.email].holdings=HOLDINGS; saveUsers(users); } }
   function addHolding(id,n){ var ex=null; HOLDINGS.forEach(function(h){ if(h.id===id) ex=h; });
-    if(ex){ ex.shares+=n; } else { HOLDINGS.push({id:id,shares:n,stage:1,monthsHeld:0}); } persistUser(); }
-  function signOut(){ state.loggedIn=false; state.name=''; state.email=''; HOLDINGS=[]; setAuthUI(); Store.del('amco_session'); setAuthMode('login'); go('home'); }
+    if(ex){ ex.shares+=n; } else { HOLDINGS.push({id:id,shares:n,stage:1,monthsHeld:0}); } persistUser();
+    if(window.DB||DB){ DB.commit({deal_id:id, name:state.name||'Investor', email:state.email||'', shares:n}); } }
+  function signOut(){ state.loggedIn=false; state.name=''; state.email=''; HOLDINGS=[]; setAuthUI(); Store.del('amco_session'); setAuthMode('login'); go('welcome'); }
   function loadSession(){ var em=Store.get('amco_session'); if(!em)return; var u=loadUsers()[em]; if(u) setUser(u); }
 
   function setAuthUI(){
@@ -854,11 +874,14 @@
     function list(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE+'?select=data&order=created_at.asc',{headers:hdr()})
         .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(rows){ return rows.map(function(x){return x.data;}); })
         .catch(function(){ return localList(); }); } return Promise.resolve(localList()); }
-    return { list:list, on:on };
+    function localCommit(c){ try{var a=JSON.parse(window.localStorage.getItem('amco_commitments')||'[]'); a.push(c); window.localStorage.setItem('amco_commitments',JSON.stringify(a));}catch(e){} }
+    function commit(c){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments',{method:'POST',headers:hdr(),body:JSON.stringify(c)}).then(function(r){ if(!r.ok) throw 0; return true; }).catch(function(){ localCommit(c); return false; }); } localCommit(c); return Promise.resolve(true); }
+    return { list:list, commit:commit, on:on };
   })();
 
   renderList(); renderBuilder(); loadSession(); setAuthUI(); setAuthMode('signup');
   root.querySelector('#pf-signout').onclick=signOut;
+  go(state.loggedIn ? 'home' : 'welcome');
   Promise.resolve(DB.list()).then(function(deals){
     var added=false;
     (deals||[]).forEach(function(o){ if(!o||!o.id||o.archived||byId[o.id])return; o.deadline=o.closeAt||(NOW+((o.closesDays||14)*86400000)); DEALS.push(o); byId[o.id]=o; if(o.stmt) STMT[o.id]=o.stmt; added=true; });
