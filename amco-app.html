@@ -556,29 +556,7 @@
   var f=function(n){return '£'+Math.round(n).toLocaleString('en-GB');};
   var f2=function(n){return '£'+n.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});};
 
-  var DEALS=[
-    { id:'derby', title:'Derby House, Wigan', loc:'2-bed end-of-terrace · tenanted from day one', tag:'Residential · 2-bed', type:'residential',
-      desc:'Light refurb, stable existing income, refinance to release the bulk of capital.', grad:'linear-gradient(135deg,#3F7A5C,#2C5D6B)',
-      risk:'low', riskN:1, closesDays:9, fundingPct:41, sharesLeft:59, sharesTotal:100, sharePrice:1088.50, dayYield:'8.0%', refiYield:'14.2%', capBack:'72%',
-      loanMonths:'By month 10', worksTxt:'£4,000 light refurbishment to secure value and income.',
-      per:{cashout:788.90,leftIn:299.60,day:86.76,refi:42.49,total5:1529.20},
-      breakdown:[['Agreed purchase price','£97,000'],['SDLT','£4,850'],['Legals','£3,000'],['Works','£4,000'],['Total raised','£108,850'],['Value after works','£115,000'],['Refinance loan (70%)','£80,500'],['Income (stabilised)','£850 pcm']],
-      reasons:['✓ Tenanted and producing income from day one.','✓ Small, light refurbishment (£4,000).','✓ Single simple let in an established rental area.'] },
-    { id:'l21', title:'L21 Portfolio', loc:'10 houses, Liverpool L21 · single block buy', tag:'Residential · portfolio', type:'residential',
-      desc:'Ten tenanted houses bought together, refurbished, then refinanced as one.', grad:'linear-gradient(135deg,#2C5D6B,#14302E)',
-      risk:'medium', riskN:2, closesDays:21, fundingPct:18, sharesLeft:820, sharesTotal:1000, sharePrice:1179.50, dayYield:'4.7%', refiYield:'16.1%', capBack:'79%',
-      loanMonths:'By month 12', worksTxt:'£65,000 of works across ten houses to lift income.',
-      per:{cashout:926.10,leftIn:253.40,day:55.70,refi:40.69,total5:1749.20},
-      breakdown:[['Agreed purchase price','£1,050,000'],['SDLT','£52,500'],['Legals','£12,000'],['Works','£65,000'],['Total raised','£1,179,500'],['Value after works','£1,350,000'],['Refinance loan (70%)','£945,000'],['Income (stabilised)','£107,000 / yr']],
-      reasons:['✓ Ten tenanted houses — income diversified across units.','• Larger refurbishment (£65,000) adds works risk.','• Portfolio refinance depends on valuation across all units.'] },
-    { id:'pine', title:'Pine Court, Southport', loc:'14 converted flats · block of flats', tag:'Residential · conversion', type:'residential',
-      desc:'Block of 14 flats, modest works to lift income, refinanced on the uplift.', grad:'linear-gradient(135deg,#B5532E,#8a4424)',
-      risk:'high', riskN:3, closesDays:4, fundingPct:66, sharesLeft:340, sharesTotal:1000, sharePrice:1030.00, dayYield:'7.0%', refiYield:'17.5%', capBack:'80%',
-      loanMonths:'By month 10', worksTxt:'£20,000 works to lift income across the block.',
-      per:{cashout:823.20,leftIn:206.80,day:71.80,refi:36.16,total5:1554.80},
-      breakdown:[['Agreed purchase price','£920,000'],['SDLT','£82,000'],['Legals','£8,000'],['Works','£20,000'],['Total raised','£1,030,000'],['Value after works','£1,200,000'],['Refinance loan (70%)','£840,000'],['Income (stabilised)','£97,000 / yr']],
-      reasons:['• Block of 14 converted flats — conversion &amp; leasehold complexity.','• Higher purchase costs (SDLT £82,000).','• Income uplift relies on works and re-letting.'] }
-  ];
+  var DEALS=[];
   var byId={}; DEALS.forEach(function(d){byId[d.id]=d;});
   var NOW=Date.now();
   DEALS.forEach(function(d){ d.deadline = NOW + d.closesDays*86400000; });
@@ -613,6 +591,7 @@
   function riskLabel(r){return r.charAt(0).toUpperCase()+r.slice(1)+' risk';}
   function renderList(){
     var list=root.querySelector('#list'); list.innerHTML='';
+    if(!DEALS.length){ list.innerHTML='<div class="card" style="text-align:center;padding:40px"><div class="eyebrow" style="color:var(--clay)">No live deals yet</div><h2 style="margin:10px 0 6px">Nothing open right now</h2><p style="color:var(--muted);font-size:13.5px;max-width:380px;margin:0 auto">New investment opportunities will appear here as soon as they\u2019re published. Check back soon.</p></div>'; return; }
     DEALS.forEach(function(d){
       var el=document.createElement('div'); el.className='lcard';
       el.dataset.type=d.type; el.dataset.risk=d.riskN; el.dataset.yield=parseFloat(d.refiYield); el.dataset.share=d.sharePrice;
@@ -838,7 +817,7 @@
 
   /* ---- portfolio ---- */
   var HOLDINGS=[];
-  var STMT={ derby:{rentMo:850, insYr:300, intYr:4427.50}, l21:{rentMo:5416.67, insYr:1500, intYr:51975}, pine:{rentMo:7083.33, insYr:3000, intYr:46200} };
+  var STMT={};
   function statement(h){
     var d=byId[h.id], s=STMT[h.id], frac=h.shares/d.sharesTotal;
     var gross=s.rentMo*frac, mgmt=gross*0.12, ins=(s.insYr/12)*frac, intr=(h.stage>=2?(s.intYr/12)*frac:0);

@@ -338,23 +338,7 @@
   var gbpm=function(v){return v>=1e6?'£'+(v/1e6).toFixed(2)+'M':gbpk(v);};
 
   var STAGES=['Sourced','Funding','Bought','Works','Refinanced','Holding'];
-  var DEALS=[
-    {id:'derby',name:'Derby House, Wigan',type:'Residential',desc:'2-bed end-of-terrace',risk:'low',status:'funding',grad:'linear-gradient(135deg,#3F7A5C,#2C5D6B)',
-     sharePrice:1088.50,shares:100,sold:41,investors:28,closesDays:9,stageIdx:1,
-     totalIn:108850,value:115000,loan:80500,leftIn:29960,capBack:'72%',dayYield:'8.0%',refiYield:'14.2%',uplift:6150,amco:27213,returned:0,distributed:0,monthly:null},
-    {id:'l21',name:'L21 Portfolio',type:'Residential',desc:'10 houses, Liverpool L21',risk:'medium',status:'funding',grad:'linear-gradient(135deg,#2C5D6B,#14302E)',
-     sharePrice:1179.50,shares:1000,sold:180,investors:64,closesDays:21,stageIdx:1,
-     totalIn:1179500,value:1350000,loan:945000,leftIn:253400,capBack:'79%',dayYield:'4.7%',refiYield:'16.1%',uplift:170500,amco:294875,returned:0,distributed:0,monthly:null},
-    {id:'pine',name:'Pine Court, Southport',type:'Residential',desc:'14 converted flats',risk:'high',status:'funding',grad:'linear-gradient(135deg,#B5532E,#8a4424)',
-     sharePrice:1030.00,shares:1000,sold:660,investors:210,closesDays:4,stageIdx:1,
-     totalIn:1030000,value:1200000,loan:840000,leftIn:206800,capBack:'80%',dayYield:'7.0%',refiYield:'17.5%',uplift:170000,amco:257500,returned:0,distributed:0,monthly:null},
-    {id:'victoria',name:'Victoria Terrace, Bolton',type:'Residential',desc:'3-bed mid-terrace',risk:'low',status:'live',grad:'linear-gradient(135deg,#3F7A5C,#2C5D6B)',
-     sharePrice:1050,shares:250,sold:250,investors:74,closesDays:0,stageIdx:5,
-     totalIn:262500,value:300000,loan:210000,leftIn:57540,capBack:'78%',dayYield:'7.4%',refiYield:'15.0%',uplift:37500,amco:65625,returned:204960,distributed:4781,monthly:{gross:1750,mgmt:210,ins:42,int:962,net:536},monthsRunning:7},
-    {id:'hope',name:'Hope Mill, Rochdale',type:'Residential',desc:'6 apartments',risk:'medium',status:'live',grad:'linear-gradient(135deg,#2C5D6B,#14302E)',
-     sharePrice:1120,shares:500,sold:500,investors:138,closesDays:0,stageIdx:5,
-     totalIn:560000,value:700000,loan:490000,leftIn:80200,capBack:'85%',dayYield:'5.2%',refiYield:'18.0%',uplift:140000,amco:140000,returned:478800,distributed:9540,monthly:{gross:3600,mgmt:432,ins:90,int:2246,net:832},monthsRunning:5}
-  ];
+  var DEALS=[];
   var byId={}; DEALS.forEach(function(d){byId[d.id]=d;});
   var raisedOf=function(d){ return d.status==='funding' ? (d.sold/d.shares)*d.totalIn : d.totalIn; };
 
@@ -396,12 +380,11 @@
       return '<div style="padding:9px 0;border-bottom:1px solid var(--rule)"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><b>'+d.name+'</b><span style="color:var(--muted)">'+p+'% · closes '+d.closesDays+'d</span></div><div class="bar"><i style="width:'+p+'%"></i></div></div>';
     }).join('');
 
-    $('#ov-attention').innerHTML=
-      '<div style="padding:8px 0;border-bottom:1px solid var(--rule)">⏳ <b>Pine Court</b> closes in 4 days — 66% funded.</div>'+
-      '<div style="padding:8px 0;border-bottom:1px solid var(--rule)">🔑 <b>Derby House</b> refinance due within the next 2 months.</div>'+
-      '<div style="padding:8px 0">📤 <b>Hope Mill</b> monthly income ready to distribute (£832).</div>';
+    $('#ov-attention').innerHTML = DEALS.length
+      ? '<div style="padding:8px 0">Nothing needs attention right now.</div>'
+      : '<div style="padding:8px 0;color:var(--muted)">No deals yet. Publish one in <b>New investment</b> to get started.</div>';
 
-    $('#ov-deals').innerHTML=DEALS.map(dealRow).join('');
+    $('#ov-deals').innerHTML = DEALS.length ? DEALS.map(dealRow).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0">Published deals appear on the <b>Deals</b> page.</div>';
     bindRows('#ov-deals');
   }
 
@@ -413,6 +396,7 @@
     return h+'</div>';
   }
   function openMetric(key){
+    if(!DEALS.length){ $('#mt-crumb').textContent='Overview'; $('#mt-title').textContent='No data yet'; $('#mt-value').textContent='—'; $('#mt-note').textContent='These business metrics populate once deals are live. Your published deals are on the Deals page.'; $('#mt-subs').innerHTML=''; $('#mt-table').innerHTML=''; go('metric'); return; }
     var funding=DEALS.filter(function(d){return d.status==='funding';}), live=DEALS.filter(function(d){return d.status==='live';});
     var totalRaised=DEALS.reduce(function(a,d){return a+raisedOf(d);},0);
     var c;
@@ -464,14 +448,15 @@
   function renderDeals(){
     var el=$('#deals-list');
     el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px">Loading your deals…</div>';
-    Promise.resolve(DB.list()).then(function(list){
-      list=list||[];
+    Promise.all([Promise.resolve(DB.list()), Promise.resolve(DB.allQuestions())]).then(function(res){
+      var list=res[0]||[], qs=res[1]||[];
+      var unq={}; qs.forEach(function(q){ if(!q.answer){ unq[q.deal_id]=(unq[q.deal_id]||0)+1; } });
       var active=list.filter(function(d){return d&&!d.archived;});
       var arch=list.filter(function(d){return d&&d.archived;});
       var html='<h2 style="margin:0 0 6px">Your published deals</h2>';
-      html += active.length ? active.map(function(d){return pubRow(d,false);}).join('')
+      html += active.length ? active.map(function(d){return pubRow(d,false,unq[d.id]||0);}).join('')
                             : '<div style="color:var(--muted);font-size:13px;padding:8px 0 12px">No deals published yet. Build one in <b>New investment</b> and hit Publish — it\u2019ll appear here and on the investor site.</div>';
-      if(arch.length){ html+='<h2 style="margin:20px 0 6px">Archived</h2>'+arch.map(function(d){return pubRow(d,true);}).join(''); }
+      if(arch.length){ html+='<h2 style="margin:20px 0 6px">Archived</h2>'+arch.map(function(d){return pubRow(d,true,unq[d.id]||0);}).join(''); }
       el.innerHTML=html;
       bindDealActions(active.concat(arch));
       updateAdminCountdowns();
@@ -479,16 +464,21 @@
   }
   function capr(s){ return (s||'').charAt(0).toUpperCase()+(s||'').slice(1); }
   function escr(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-  function pubRow(d,archived){
+  function pubRow(d,archived,unanswered){
+    unanswered=unanswered||0;
     var closeAt=d.closeAt||(Date.now()+((d.closesDays||14)*86400000));
+    var titleDot = unanswered>0 ? ' <span title="'+unanswered+' unanswered question'+(unanswered===1?'':'s')+'" style="display:inline-block;width:9px;height:9px;border-radius:99px;background:var(--clay);vertical-align:middle;margin-left:5px"></span>' : '';
+    var qBtn = unanswered>0
+      ? '<button class="btn pact" data-act="qa" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px;background:var(--clay);border-color:var(--clay)">Questions <span style="background:#fff;color:var(--clay);border-radius:99px;padding:0 6px;font-weight:800;margin-left:2px">'+unanswered+'</span></button>'
+      : '<button class="btn btn-ghost pact" data-act="qa" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Questions</button>';
     return '<div class="deal-wrap">'+
       '<div class="drow" style="opacity:'+(archived?'0.7':'1')+'"><div class="dswatch" style="background:'+(d.grad||'linear-gradient(135deg,#3F7A5C,#2C5D6B)')+'"></div>'+
-      '<div style="flex:1 1 150px"><h4>'+escr(d.title||'(untitled deal)')+'</h4><div class="sub">'+escr(d.tag||'')+' · '+gbp(d.sharePrice||0)+'/share</div></div>'+
+      '<div style="flex:1 1 150px"><h4>'+escr(d.title||'(untitled deal)')+titleDot+'</h4><div class="sub">'+escr(d.tag||'')+' · '+gbp(d.sharePrice||0)+'/share</div></div>'+
       (archived?'<span class="status completed" style="flex:0 0 auto">Archived</span>'
                :'<div class="closes admin-cd" data-dl="'+closeAt+'" style="flex:0 0 92px;font-size:12px;font-weight:600;text-align:right"><span class="cd"></span></div>')+
       '<span class="risk '+(d.risk||'low')+'">'+capr(d.risk)+'</span>'+
       '<button class="btn btn-ghost pact" data-act="commits" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Committed</button>'+
-      '<button class="btn btn-ghost pact" data-act="qa" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Questions</button>'+
+      qBtn+
       (archived
         ? '<button class="btn btn-ghost pact" data-act="restore" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Restore</button><button class="btn pact" data-act="remove" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px;background:var(--danger);border-color:var(--danger)">Delete</button>'
         : '<button class="btn btn-ghost pact" data-act="archive" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Archive</button>')+
