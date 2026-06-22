@@ -320,7 +320,11 @@
         .catch(function(){ return localList(); }); } return Promise.resolve(localList()); }
     function add(deal){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE,{method:'POST',headers:hdr(),body:JSON.stringify({deal_id:deal.id,data:deal})})
         .then(function(r){ return r.ok; }).catch(function(){ localAdd(deal); return false; }); } localAdd(deal); return Promise.resolve(true); }
-    return { list:list, add:add, on:on };
+    function localPatch(deal){ try{var a=localList(); for(var i=0;i<a.length;i++){if(a[i].id===deal.id)a[i]=deal;} window.localStorage.setItem('amco_deals',JSON.stringify(a));}catch(e){} }
+    function localRemove(id){ try{var a=localList().filter(function(d){return d.id!==id;}); window.localStorage.setItem('amco_deals',JSON.stringify(a));}catch(e){} }
+    function patch(deal){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE+'?deal_id=eq.'+encodeURIComponent(deal.id),{method:'PATCH',headers:Object.assign({Prefer:'return=minimal'},hdr()),body:JSON.stringify({data:deal})}).then(function(r){return r.ok;}).catch(function(){localPatch(deal);return false;}); } localPatch(deal); return Promise.resolve(true); }
+    function remove(id){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE+'?deal_id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:hdr()}).then(function(r){return r.ok;}).catch(function(){localRemove(id);return false;}); } localRemove(id); return Promise.resolve(true); }
+    return { list:list, add:add, patch:patch, remove:remove, on:on };
   })();
   var gbp=function(v){return (v<0?'−£':'£')+Math.abs(Math.round(v)).toLocaleString('en-GB');};
   var gbpk=function(v){return '£'+(v/1000).toFixed(0)+'k';};
@@ -450,7 +454,48 @@
       '<span class="status '+d.status+'">'+(d.status==='funding'?'Funding':'Live')+'</span>'+
       '<span class="risk '+d.risk+'">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span></div>';
   }
-  function renderDeals(){ $('#deals-list').innerHTML=DEALS.map(dealRow).join(''); bindRows('#deals-list'); }
+  function renderDeals(){
+    var el=$('#deals-list');
+    el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px">Loading your deals…</div>';
+    Promise.resolve(DB.list()).then(function(list){
+      list=list||[];
+      var active=list.filter(function(d){return d&&!d.archived;});
+      var arch=list.filter(function(d){return d&&d.archived;});
+      var html='<h2 style="margin:0 0 6px">Your published deals</h2>';
+      html += active.length ? active.map(function(d){return pubRow(d,false);}).join('')
+                            : '<div style="color:var(--muted);font-size:13px;padding:8px 0 12px">No deals published yet. Build one in <b>New investment</b> and hit Publish — it\u2019ll appear here and on the investor site.</div>';
+      if(arch.length){ html+='<h2 style="margin:20px 0 6px">Archived</h2>'+arch.map(function(d){return pubRow(d,true);}).join(''); }
+      el.innerHTML=html;
+      bindDealActions(active.concat(arch));
+      updateAdminCountdowns();
+    });
+  }
+  function capr(s){ return (s||'').charAt(0).toUpperCase()+(s||'').slice(1); }
+  function escr(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function pubRow(d,archived){
+    var closeAt=d.closeAt||(Date.now()+((d.closesDays||14)*86400000));
+    return '<div class="drow" style="opacity:'+(archived?'0.7':'1')+'"><div class="dswatch" style="background:'+(d.grad||'linear-gradient(135deg,#3F7A5C,#2C5D6B)')+'"></div>'+
+      '<div style="flex:1 1 170px"><h4>'+escr(d.title)+'</h4><div class="sub">'+escr(d.tag||'')+' · '+gbp(d.sharePrice||0)+'/share</div></div>'+
+      (archived?'<span class="status completed" style="flex:0 0 auto">Archived</span>'
+               :'<div class="closes admin-cd" data-dl="'+closeAt+'" style="flex:0 0 100px;font-size:12px;font-weight:600;text-align:right"><span class="cd"></span></div>')+
+      '<span class="risk '+(d.risk||'low')+'">'+capr(d.risk)+'</span>'+
+      (archived
+        ? '<button class="btn btn-ghost pact" data-act="restore" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Restore</button><button class="btn pact" data-act="remove" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px;background:var(--danger);border-color:var(--danger)">Delete</button>'
+        : '<button class="btn btn-ghost pact" data-act="archive" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Archive</button>')+
+      '</div>';
+  }
+  function bindDealActions(list){
+    var map={}; list.forEach(function(d){map[d.id]=d;});
+    $('#deals-list').querySelectorAll('.pact').forEach(function(b){ b.onclick=function(){
+      var d=map[b.dataset.id]; if(!d)return; var act=b.dataset.act;
+      if(act==='archive'){ d.archived=true; b.textContent='…'; Promise.resolve(DB.patch(d)).then(renderDeals); }
+      else if(act==='restore'){ d.archived=false; b.textContent='…'; Promise.resolve(DB.patch(d)).then(renderDeals); }
+      else if(act==='remove'){ if(window.confirm('Permanently delete \u201c'+(d.title||'this deal')+'\u201d? This cannot be undone.')){ b.textContent='…'; Promise.resolve(DB.remove(d.id)).then(renderDeals); } }
+    }; });
+  }
+  function admLeft(dl){ var diff=dl-Date.now(); if(diff<=0)return 'Closed'; var d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000); if(diff<86400000) return '\u23f3 '+h+'h '+m+'m '+s+'s'; return d+'d '+h+'h'; }
+  function updateAdminCountdowns(){ root.querySelectorAll('.admin-cd[data-dl]').forEach(function(e){ var dl=Number(e.dataset.dl); var cd=e.querySelector('.cd'); if(cd) cd.textContent=admLeft(dl); var diff=dl-Date.now(); e.style.color=(diff<3*86400000)?'var(--clay)':'var(--muted)'; e.style.fontWeight=(diff>0&&diff<86400000)?'800':'600'; }); }
+  setInterval(updateAdminCountdowns,1000);
   function bindRows(sel){ root.querySelectorAll(sel+' .drow').forEach(function(r){ r.onclick=function(){ openDeal(r.dataset.id); }; }); }
 
   /* per-deal dashboard */
@@ -546,6 +591,7 @@
     var risk=bRisk, riskN=risk==='low'?1:risk==='medium'?2:3, loanmo=n('f-loanmo')||10;
     var typeLabel=typeV.charAt(0).toUpperCase()+typeV.slice(1);
     var closeVal=$('#f-close').value, closesDays=closeVal?Math.max(0,Math.ceil((new Date(closeVal)-Date.now())/86400000)):14;
+    var closeAt=closeVal?new Date(closeVal+'T23:59:59').getTime():(Date.now()+closesDays*86400000);
     var grad=risk==='low'?'linear-gradient(135deg,#3F7A5C,#2C5D6B)':risk==='medium'?'linear-gradient(135deg,#2C5D6B,#14302E)':'linear-gradient(135deg,#B5532E,#8a4424)';
     var reasons = risk==='high'
       ? ['• Higher-risk: a '+catLabel.toLowerCase()+' with more moving parts.','• Returns depend on the works and re-letting going to plan.','• Less liquid — exit needs notice and a buyer.']
@@ -555,7 +601,7 @@
     return {
       id:'pub_'+Date.now(), title:($('#f-name').value||'Untitled deal').trim(), desc:($('#f-desc').value||'').trim(),
       loc:catLabel+' · '+typeLabel, tag:typeLabel+' · '+catLabel, type:typeV, risk:risk, riskN:riskN,
-      closesDays:closesDays, fundingPct:0, sharesLeft:shares, sharesTotal:shares, sharePrice:sharePrice,
+      closesDays:closesDays, closeAt:closeAt, fundingPct:0, sharesLeft:shares, sharesTotal:shares, sharePrice:sharePrice,
       dayYield:pctS(dayYield), refiYield:pctS(refiYield), capBack:Math.round(capBack*100)+'%', grad:grad,
       worksTxt: works>0? gbpr(works)+' of works to lift the property and its income.' : 'Bought ready to let.',
       loanMonths:'By month '+loanmo,

@@ -861,7 +861,7 @@
   root.querySelector('#pf-signout').onclick=signOut;
   Promise.resolve(DB.list()).then(function(deals){
     var added=false;
-    (deals||[]).forEach(function(o){ if(!o||!o.id||byId[o.id])return; o.deadline=NOW+((o.closesDays||14)*86400000); DEALS.push(o); byId[o.id]=o; if(o.stmt) STMT[o.id]=o.stmt; added=true; });
+    (deals||[]).forEach(function(o){ if(!o||!o.id||o.archived||byId[o.id])return; o.deadline=o.closeAt||(NOW+((o.closesDays||14)*86400000)); DEALS.push(o); byId[o.id]=o; if(o.stmt) STMT[o.id]=o.stmt; added=true; });
     if(added){ renderList(); updateCountdowns(); }
   }).catch(function(){});
   updateCountdowns(); setInterval(updateCountdowns, 1000);
