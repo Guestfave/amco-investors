@@ -198,6 +198,14 @@
   </div>
 </div>
 
+<!-- PUBLISHED DEAL DETAIL -->
+<div class="page" id="page-pubdeal">
+  <div class="wrap">
+    <div class="crumbs"><a data-go="deals">Deals</a> / <span id="pd2-crumb"></span></div>
+    <div id="pd2-content"></div>
+  </div>
+</div>
+
 <!-- NEW INVESTMENT (builder) -->
 <div class="page" id="page-new">
   <div class="wrap">
@@ -223,7 +231,7 @@
         <div class="sec">Costs in</div>
         <div class="frow">
           <label class="afield"><span>Purchase price</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-price" value="" placeholder="0"></div></label>
-          <label class="afield"><span>SDLT</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-sdlt" value="" placeholder="0"></div></label>
+          <label class="afield"><span>SDLT (auto)</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-sdlt" value="" placeholder="auto" readonly style="background:#F1F0EE;color:var(--muted)"></div></label>
           <label class="afield"><span>Legals</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-legals" value="" placeholder="0"></div></label>
           <label class="afield"><span>Works</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-works" value="" placeholder="0"></div></label>
         </div>
@@ -326,12 +334,13 @@
     function remove(id){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE+'?deal_id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:hdr()}).then(function(r){return r.ok;}).catch(function(){localRemove(id);return false;}); } localRemove(id); return Promise.resolve(true); }
     function localCommitments(dealId){ try{return JSON.parse(window.localStorage.getItem('amco_commitments')||'[]').filter(function(c){return c.deal_id===dealId;});}catch(e){return [];} }
     function commitments(dealId){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments?deal_id=eq.'+encodeURIComponent(dealId)+'&select=*&order=created_at.desc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localCommitments(dealId); }); } return Promise.resolve(localCommitments(dealId)); }
+    function allCommitments(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments?select=deal_id',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ try{return JSON.parse(window.localStorage.getItem('amco_commitments')||'[]');}catch(e){return [];} }); } try{ return Promise.resolve(JSON.parse(window.localStorage.getItem('amco_commitments')||'[]')); }catch(e){ return Promise.resolve([]); } }
     function localQ(){ try{return JSON.parse(window.localStorage.getItem('amco_questions')||'[]');}catch(e){return [];} }
     function localAnswer(id,ans){ try{var a=localQ(); for(var i=0;i<a.length;i++){if(String(a[i].id)===String(id))a[i].answer=ans;} window.localStorage.setItem('amco_questions',JSON.stringify(a));}catch(e){} return true; }
     function questions(dealId){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions?deal_id=eq.'+encodeURIComponent(dealId)+'&select=*&order=created_at.asc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localQ().filter(function(q){return q.deal_id===dealId;}); }); } return Promise.resolve(localQ().filter(function(q){return q.deal_id===dealId;})); }
     function allQuestions(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions?select=*&order=created_at.desc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localQ(); }); } return Promise.resolve(localQ()); }
     function answer(id,ans){ if(on && String(id).indexOf('lq_')!==0){ return fetch(SUPABASE_URL+'/rest/v1/questions?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:Object.assign({Prefer:'return=minimal'},hdr()),body:JSON.stringify({answer:ans})}).then(function(r){ return r.ok; }).catch(function(){ return localAnswer(id,ans); }); } return Promise.resolve(localAnswer(id,ans)); }
-    return { list:list, add:add, patch:patch, remove:remove, commitments:commitments, questions:questions, allQuestions:allQuestions, answer:answer, on:on };
+    return { list:list, add:add, patch:patch, remove:remove, commitments:commitments, allCommitments:allCommitments, questions:questions, allQuestions:allQuestions, answer:answer, on:on };
   })();
   var gbp=function(v){return (v<0?'−£':'£')+Math.abs(Math.round(v)).toLocaleString('en-GB');};
   var gbpk=function(v){return '£'+(v/1000).toFixed(0)+'k';};
@@ -445,18 +454,48 @@
       '<span class="status '+d.status+'">'+(d.status==='funding'?'Funding':'Live')+'</span>'+
       '<span class="risk '+d.risk+'">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span></div>';
   }
+  function getSeenCommits(){ try{return JSON.parse(window.localStorage.getItem('amco_seen_commits')||'{}');}catch(e){return {};} }
+  function setSeenCommit(id,count){ var s=getSeenCommits(); s[id]=count; try{window.localStorage.setItem('amco_seen_commits',JSON.stringify(s));}catch(e){} }
+  function openPubDeal(d){
+    var closeAt=d.closeAt||(Date.now()+((d.closesDays||14)*86400000));
+    var kv=function(arr){ return (arr||[]).map(function(r){return '<div class="kv"><span>'+escr(r[0])+'</span><b>'+escr(r[1])+'</b></div>';}).join(''); };
+    var p=d.per||{};
+    var figs=[['Share price',gbp(d.sharePrice||0)],['Shares',d.sharesTotal||'—'],['Day-one yield',d.dayYield||'—'],['After-refi yield',d.refiYield||'—'],['Capital back',d.capBack||'—'],['Status',d.archived?'Archived':'Live']];
+    var perRows=[['Cash back at refinance',gbp(p.cashout||0)],['Money left in',gbp(p.leftIn||0)],['Income day one',gbp(p.day||0)+' / yr'],['Income after refi',gbp(p.refi||0)+' / yr']];
+    var html='<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+
+      '<div class="dswatch" style="width:48px;height:48px;flex:0 0 48px;background:'+(d.grad||'linear-gradient(135deg,#3F7A5C,#2C5D6B)')+'"></div>'+
+      '<div style="flex:1"><h1 class="disp" style="font-size:24px;margin:0">'+escr(d.title||'(untitled)')+'</h1><div style="font-size:12.5px;color:var(--muted)">'+escr(d.tag||'')+(d.desc?' · '+escr(d.desc):'')+'</div></div>'+
+      '<span class="risk '+(d.risk||'low')+'">'+capr(d.risk)+'</span></div>'+
+      '<div class="closes admin-cd" data-dl="'+closeAt+'" style="font-weight:700;font-size:13px;margin-bottom:16px"><span class="cd"></span></div>'+
+      '<div class="grid2">'+
+        '<div class="card"><h2>Key figures</h2>'+kv(figs)+'</div>'+
+        '<div class="card"><h2>The deal, in full</h2>'+kv(d.breakdown)+'</div>'+
+      '</div>'+
+      '<div class="grid2" style="margin-top:16px">'+
+        '<div class="card"><h2>Property details</h2>'+((d.details&&d.details.length)?kv(d.details):'<div style="color:var(--muted);font-size:13px">None provided.</div>')+'</div>'+
+        '<div class="card"><h2>Per share</h2>'+kv(perRows)+'</div>'+
+      '</div>'+
+      '<div class="card" style="margin-top:16px"><h2>Why this risk rating</h2><ul style="margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)">'+(d.reasons||[]).map(function(r){return '<li style="margin-bottom:6px">'+escr(r)+'</li>';}).join('')+'</ul></div>'+
+      '<div style="margin-top:16px"><a class="btn btn-ghost" data-go="deals">← Back to deals</a></div>';
+    $('#pd2-content').innerHTML=html;
+    $('#pd2-crumb').textContent=d.title||'Deal';
+    go('pubdeal'); updateAdminCountdowns();
+  }
   function renderDeals(openQA){
     var el=$('#deals-list');
     el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px">Loading your deals…</div>';
-    Promise.all([Promise.resolve(DB.list()), Promise.resolve(DB.allQuestions())]).then(function(res){
-      var list=res[0]||[], qs=res[1]||[];
+    Promise.all([Promise.resolve(DB.list()), Promise.resolve(DB.allQuestions()), Promise.resolve(DB.allCommitments())]).then(function(res){
+      var list=res[0]||[], qs=res[1]||[], cs=res[2]||[];
       var unq={}; qs.forEach(function(q){ if(!q.answer){ unq[q.deal_id]=(unq[q.deal_id]||0)+1; } });
+      var cmap={}; cs.forEach(function(c){ cmap[c.deal_id]=(cmap[c.deal_id]||0)+1; });
+      var seenC=getSeenCommits();
       var active=list.filter(function(d){return d&&!d.archived;});
       var arch=list.filter(function(d){return d&&d.archived;});
+      function nc(d){ return Math.max(0,(cmap[d.id]||0)-(seenC[d.id]||0)); }
       var html='<h2 style="margin:0 0 6px">Your published deals</h2>';
-      html += active.length ? active.map(function(d){return pubRow(d,false,unq[d.id]||0);}).join('')
+      html += active.length ? active.map(function(d){return pubRow(d,false,unq[d.id]||0,nc(d));}).join('')
                             : '<div style="color:var(--muted);font-size:13px;padding:8px 0 12px">No deals published yet. Build one in <b>New investment</b> and hit Publish — it\u2019ll appear here and on the investor site.</div>';
-      if(arch.length){ html+='<h2 style="margin:20px 0 6px">Archived</h2>'+arch.map(function(d){return pubRow(d,true,unq[d.id]||0);}).join(''); }
+      if(arch.length){ html+='<h2 style="margin:20px 0 6px">Archived</h2>'+arch.map(function(d){return pubRow(d,true,unq[d.id]||0,nc(d));}).join(''); }
       el.innerHTML=html;
       var all=active.concat(arch);
       bindDealActions(all);
@@ -468,21 +507,24 @@
   }
   function capr(s){ return (s||'').charAt(0).toUpperCase()+(s||'').slice(1); }
   function escr(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-  function pubRow(d,archived,unanswered){
-    unanswered=unanswered||0;
+  function pubRow(d,archived,unanswered,newCommits){
+    unanswered=unanswered||0; newCommits=newCommits||0;
     var closeAt=d.closeAt||(Date.now()+((d.closesDays||14)*86400000));
     var titleDot = unanswered>0 ? ' <span title="'+unanswered+' unanswered question'+(unanswered===1?'':'s')+'" style="display:inline-block;width:9px;height:9px;border-radius:99px;background:var(--clay);vertical-align:middle;margin-left:5px"></span>' : '';
     var qBtn = unanswered>0
       ? '<button class="btn pact" data-act="qa" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px;background:var(--clay);border-color:var(--clay)">Questions <span style="background:#fff;color:var(--clay);border-radius:99px;padding:0 6px;font-weight:800;margin-left:2px">'+unanswered+'</span></button>'
       : '<button class="btn btn-ghost pact" data-act="qa" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Questions</button>';
+    var cBtn = newCommits>0
+      ? '<button class="btn pact" data-act="commits" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px;background:var(--clay);border-color:var(--clay)">Committed <span style="background:#fff;color:var(--clay);border-radius:99px;padding:0 6px;font-weight:800;margin-left:2px">'+newCommits+'</span></button>'
+      : '<button class="btn btn-ghost pact" data-act="commits" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Committed</button>';
     return '<div class="deal-wrap">'+
       '<div class="drow" style="opacity:'+(archived?'0.7':'1')+'"><div class="dswatch" style="background:'+(d.grad||'linear-gradient(135deg,#3F7A5C,#2C5D6B)')+'"></div>'+
       '<div style="flex:1 1 150px"><h4>'+escr(d.title||'(untitled deal)')+titleDot+'</h4><div class="sub">'+escr(d.tag||'')+' · '+gbp(d.sharePrice||0)+'/share</div></div>'+
       (archived?'<span class="status completed" style="flex:0 0 auto">Archived</span>'
                :'<div class="closes admin-cd" data-dl="'+closeAt+'" style="flex:0 0 92px;font-size:12px;font-weight:600;text-align:right"><span class="cd"></span></div>')+
       '<span class="risk '+(d.risk||'low')+'">'+capr(d.risk)+'</span>'+
-      '<button class="btn btn-ghost pact" data-act="commits" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Committed</button>'+
-      qBtn+
+      '<button class="btn btn-ink pact" data-act="view" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">View</button>'+
+      cBtn + qBtn +
       (archived
         ? '<button class="btn btn-ghost pact" data-act="restore" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Restore</button><button class="btn pact" data-act="remove" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px;background:var(--danger);border-color:var(--danger)">Delete</button>'
         : '<button class="btn btn-ghost pact" data-act="archive" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Archive</button>')+
@@ -506,7 +548,13 @@
       Promise.resolve(DB.answer(id,ans)).then(function(){ refreshQADot(); renderDeals(d.id); });
     }; });
   }
-  function refreshQADot(){ Promise.resolve(DB.allQuestions()).then(function(rows){ var un=(rows||[]).filter(function(q){return !q.answer;}).length; var dot=$('#qa-dot'); if(dot){ dot.style.display = un>0?'inline-block':'none'; dot.title=un+' unanswered question'+(un===1?'':'s'); } }); }
+  function refreshQADot(){ Promise.all([Promise.resolve(DB.list()), Promise.resolve(DB.allQuestions()), Promise.resolve(DB.allCommitments())]).then(function(res){
+    var deals=res[0]||[], qs=res[1]||[], cs=res[2]||[], ids={};
+    deals.forEach(function(d){ if(d&&!d.archived) ids[d.id]=1; });
+    var un=qs.filter(function(q){ return !q.answer && ids[q.deal_id]; }).length;
+    var cmap={}; cs.forEach(function(c){ if(ids[c.deal_id]) cmap[c.deal_id]=(cmap[c.deal_id]||0)+1; });
+    var seen=getSeenCommits(), newC=0; Object.keys(cmap).forEach(function(k){ newC+=Math.max(0,cmap[k]-(seen[k]||0)); });
+    var dot=$('#qa-dot'); if(dot){ dot.style.display=(un>0||newC>0)?'inline-block':'none'; dot.title=un+' question'+(un===1?'':'s')+' · '+newC+' new commitment'+(newC===1?'':'s'); } }); }
   function renderCommits(panel,rows,d){
     rows=rows||[];
     if(!rows.length){ panel.innerHTML='<div style="font-size:12.5px;color:var(--muted)">No one has committed to this deal yet.</div>'; return; }
@@ -519,10 +567,10 @@
     var map={}; list.forEach(function(d){map[d.id]=d;});
     $('#deals-list').querySelectorAll('.pact').forEach(function(b){ b.onclick=function(){
       var d=map[b.dataset.id]; if(!d)return; var act=b.dataset.act;
+      if(act==='view'){ openPubDeal(d); return; }
       if(act==='commits'){ var panel=root.querySelector('#cm-'+d.id); if(!panel)return;
-        if(panel.style.display==='none'){ panel.style.display='block';
-          if(!panel.dataset.loaded){ panel.innerHTML='<div style="font-size:12px;color:var(--muted)">Loading…</div>';
-            Promise.resolve(DB.commitments(d.id)).then(function(rows){ panel.dataset.loaded='1'; renderCommits(panel,rows,d); }); }
+        if(panel.style.display==='none'){ panel.style.display='block'; panel.innerHTML='<div style="font-size:12px;color:var(--muted)">Loading…</div>';
+          Promise.resolve(DB.commitments(d.id)).then(function(rows){ renderCommits(panel,rows,d); setSeenCommit(d.id,(rows||[]).length); b.className='btn btn-ghost pact'; b.style.background=''; b.style.borderColor=''; b.innerHTML='Committed'; refreshQADot(); });
         } else { panel.style.display='none'; } return; }
       if(act==='qa'){ var qp=root.querySelector('#qp-'+d.id); if(!qp)return;
         if(qp.style.display==='none'){ qp.style.display='block'; qp.innerHTML='<div style="font-size:12px;color:var(--muted)">Loading…</div>';
@@ -598,8 +646,24 @@
   var pct=function(v){return (v*100).toFixed(1)+'%';};
   var bRisk='low';
   var dd=new Date(Date.now()+9*86400000); $('#f-close').value=dd.toISOString().slice(0,10);
+  function sdltFor(price, residential){
+    if(!price||price<=0) return 0;
+    var bands = residential
+      ? [[125000,0.05],[250000,0.07],[925000,0.10],[1500000,0.15],[Infinity,0.17]]
+      : [[150000,0.00],[250000,0.02],[Infinity,0.05]];
+    var tax=0, lower=0;
+    for(var i=0;i<bands.length;i++){ var cap=bands[i][0], rate=bands[i][1]; var portion=Math.max(0, Math.min(price,cap)-lower); tax+=portion*rate; lower=cap; if(price<=cap) break; }
+    return Math.round(tax);
+  }
+  var REQUIRED=['f-name','f-desc','f-price','f-legals','f-works','f-value','f-ltv','f-rate','f-loanfee','f-cur','f-aft','f-mgmt','f-ins','f-shares'];
+  function validate(){
+    var ok=REQUIRED.every(function(id){ var el=$('#'+id); return el && String(el.value).trim()!==''; });
+    var btn=$('#publish'); if(btn){ btn.disabled=!ok; btn.style.opacity=ok?'1':'0.5'; btn.style.cursor=ok?'pointer':'not-allowed'; }
+    return ok;
+  }
   function recompute(){
-    var price=n('f-price'),sdlt=n('f-sdlt'),legals=n('f-legals'),works=n('f-works'),value=n('f-value'),ltv=n('f-ltv'),rate=n('f-rate'),loanFee=n('f-loanfee');
+    var price=n('f-price'),legals=n('f-legals'),works=n('f-works'),value=n('f-value'),ltv=n('f-ltv'),rate=n('f-rate'),loanFee=n('f-loanfee');
+    var typeV=$('#f-type').value, sdlt=sdltFor(price, typeV==='residential'); $('#f-sdlt').value = sdlt? sdlt.toLocaleString('en-GB') : '';
     var cur=n('f-cur')*parseFloat($('#f-cur-u').value),aft=n('f-aft')*parseFloat($('#f-aft-u').value);
     var mgmt=n('f-mgmt'),vat=parseFloat($('#f-vat').value),ins=n('f-ins'),plat=n('f-plat'),shares=n('f-shares')||1;
     var totalIn=price+sdlt+legals+works, sharePrice=totalIn/shares, loan=value*ltv/100, loanFees=loan*loanFee/100, netReleased=loan-loanFees;
@@ -615,11 +679,31 @@
     $('#o-uplift').textContent=gbp(uplift);
     $('#o-psback').textContent=gbp(netReleased/shares); $('#o-psleft').textContent=gbp(leftIn/shares)+' left in';
     var gy=totalIn>0?aft/totalIn:0; $('#warn').textContent = gy>0.30 ? '⚠ Rent after works is '+pct(gy)+' of total cost — check the /mo vs /yr toggle.' : '';
+    validate();
   }
   root.querySelectorAll('#page-new input, #page-new select').forEach(function(el){ el.addEventListener('input',recompute); el.addEventListener('change',recompute); });
   $('#f-risk').addEventListener('click',function(e){ var b=e.target.closest('.rb'); if(!b)return; this.querySelectorAll('.rb').forEach(function(x){x.classList.remove('sel');}); b.classList.add('sel'); bRisk=b.dataset.r; });
+  function propDetails(){
+    var cat=$('#f-cat').value;
+    function v(id){ var el=$('#'+id); var val=el?String(el.value).trim():''; return val===''?'NA':val; }
+    if(cat==='apartments'||cat==='converted'){
+      var arr=[['Number of apartments', UNITS.length||'NA']];
+      var counts={}; UNITS.forEach(function(u){ var k=unitLabel(u.beds); counts[k]=(counts[k]||0)+1; });
+      Object.keys(counts).forEach(function(k){ arr.push([k+' units', counts[k]]); });
+      var baths=UNITS.reduce(function(a,u){return a+(parseFloat(u.baths)||0);},0); arr.push(['Total bathrooms', baths||'NA']);
+      return arr;
+    }
+    if(cat==='house') return [['Bedrooms',v('cd-beds')],['Bathrooms',v('cd-baths')],['Floor area (sq ft)',v('cd-area')]];
+    if(cat==='portfolio') return [['Houses',v('cd-houses')],['Avg bedrooms each',v('cd-beds')],['Avg bathrooms each',v('cd-baths')]];
+    if(cat==='hmo') return [['Lettable rooms',v('cd-rooms')],['Bathrooms',v('cd-baths')],['Shared kitchens',v('cd-kit')]];
+    if(cat==='office'||cat==='retail'||cat==='leisure') return [['Units',v('cd-units')],['Floor area (sq ft)',v('cd-area')],['Use class',v('cd-use')]];
+    if(cat==='warehouse'||cat==='indunit'||cat==='trade'||cat==='storage') return [['Units',v('cd-units')],['Floor area (sq ft)',v('cd-area')],['Eaves height (m)',v('cd-eaves')],['Use class',v('cd-use')]];
+    if(cat==='shopflats'||cat==='mixedblock') return [['Residential units',v('cd-res')],['Commercial units',v('cd-com')],['Floor area (sq ft)',v('cd-area')]];
+    return [];
+  }
   function buildDealObject(){
-    var price=n('f-price'),sdlt=n('f-sdlt'),legals=n('f-legals'),works=n('f-works');
+    var price=n('f-price'),legals=n('f-legals'),works=n('f-works');
+    var sdlt=sdltFor(price, $('#f-type').value==='residential');
     var value=n('f-value'),ltv=n('f-ltv'),rate=n('f-rate'),loanFee=n('f-loanfee');
     var cur=n('f-cur')*parseFloat($('#f-cur-u').value), aft=n('f-aft')*parseFloat($('#f-aft-u').value);
     var mgmt=n('f-mgmt'),vat=parseFloat($('#f-vat').value),ins=n('f-ins'),plat=n('f-plat'),shares=n('f-shares')||1;
@@ -640,7 +724,7 @@
       ? ['• Medium-risk: a '+catLabel.toLowerCase()+' with a clear plan.','• The income uplift relies on the works completing.','• Capital is committed until refinance and beyond.']
       : ['• Lower-risk: a straightforward '+catLabel.toLowerCase()+'.','• Tenanted and earning from day one.','• Still property — values can fall as well as rise.'];
     return {
-      id:'pub_'+Date.now(), title:($('#f-name').value||'Untitled deal').trim(), desc:($('#f-desc').value||'').trim(),
+      id:'pub_'+Date.now(), publishedAt:Date.now(), title:($('#f-name').value||'Untitled deal').trim(), desc:($('#f-desc').value||'').trim(),
       loc:catLabel+' · '+typeLabel, tag:typeLabel+' · '+catLabel, type:typeV, risk:risk, riskN:riskN,
       closesDays:closesDays, closeAt:closeAt, fundingPct:0, sharesLeft:shares, sharesTotal:shares, sharePrice:sharePrice,
       dayYield:pctS(dayYield), refiYield:pctS(refiYield), capBack:Math.round(capBack*100)+'%', grad:grad,
@@ -649,16 +733,27 @@
       per:{ cashout:netReleased/shares, leftIn:leftIn/shares, day:dayNet/shares, refi:refiNet/shares, total5:(netReleased/shares)+(leftIn/shares)+(refiNet/shares*5) },
       reasons:reasons,
       breakdown:[['Purchase price',gbpr(price)],['SDLT',gbpr(sdlt)],['Legals',gbpr(legals)],['Works',gbpr(works)],['Total raised',gbpr(totalIn)],['Value after works',gbpr(value)],['Refinance loan',gbpr(loan)],['Income (stabilised)',gbpr(aft)+' / yr']],
-      stmt:{ rentMo: aft/12, insYr: ins, intYr: interest }
+      stmt:{ rentMo: aft/12, insYr: ins, intYr: interest },
+      details: propDetails()
     };
   }
+  function clearForm(){
+    ['f-name','f-desc','f-price','f-legals','f-works','f-value','f-cur','f-aft','f-ins','f-shares','f-sdlt','f-plat'].forEach(function(id){ var el=$('#'+id); if(el) el.value=''; });
+    $('#f-ltv').value='70'; $('#f-rate').value='5.5'; $('#f-loanfee').value='2'; $('#f-mgmt').value='10'; $('#f-coinv').value='25'; $('#f-loanmo').value='10';
+    $('#f-type').value='residential'; $('#f-vat').value='1'; $('#f-cur-u').value='12'; $('#f-aft-u').value='12';
+    var dd2=new Date(Date.now()+9*86400000); $('#f-close').value=dd2.toISOString().slice(0,10);
+    $('#f-risk').querySelectorAll('.rb').forEach(function(x){x.classList.remove('sel');}); var lowb=$('#f-risk').querySelector('.rb[data-r="low"]'); if(lowb) lowb.classList.add('sel'); bRisk='low';
+    UNITS=[]; if(typeof populateCats==='function') populateCats('residential');
+    recompute();
+  }
   $('#publish').onclick=function(){
+    if($('#publish').disabled) return;
     var btn=this; btn.textContent='Publishing…';
     Promise.resolve(DB.add(buildDealObject())).then(function(ok){
       var d=$('#pub-done'); d.style.display='block';
-      if(DB.on && ok){ d.style.color='var(--sage)'; d.textContent='✓ Published to the live investor site — investors will see it next time the app loads.'; }
+      if(DB.on && ok){ d.style.color='var(--sage)'; d.textContent='✓ Published to the live investor site — investors will see it next time the app loads.'; clearForm(); }
       else if(DB.on && !ok){ d.style.color='var(--danger)'; d.textContent='⚠ Couldn\u2019t save to the shared database — saved in this browser only. Check the Supabase keys and table permissions.'; }
-      else { d.style.color='var(--sage)'; d.textContent='✓ Saved in this browser. Add your Supabase keys (DEPLOY.md) to share across devices.'; }
+      else { d.style.color='var(--sage)'; d.textContent='✓ Saved in this browser. Add your Supabase keys (DEPLOY.md) to share across devices.'; clearForm(); }
       btn.textContent='Publish investment';
     });
   };
