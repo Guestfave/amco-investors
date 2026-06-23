@@ -319,7 +319,7 @@
         .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(rows){ return rows.map(function(x){return x.data;}); })
         .catch(function(){ return localList(); }); } return Promise.resolve(localList()); }
     function add(deal){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE,{method:'POST',headers:hdr(),body:JSON.stringify({deal_id:deal.id,data:deal})})
-        .then(function(r){ return r.ok; }).catch(function(){ localAdd(deal); return false; }); } localAdd(deal); return Promise.resolve(true); }
+        .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return true; }).catch(function(){ localAdd(deal); return false; }); } localAdd(deal); return Promise.resolve(true); }
     function localPatch(deal){ try{var a=localList(); for(var i=0;i<a.length;i++){if(a[i].id===deal.id)a[i]=deal;} window.localStorage.setItem('amco_deals',JSON.stringify(a));}catch(e){} }
     function localRemove(id){ try{var a=localList().filter(function(d){return d.id!==id;}); window.localStorage.setItem('amco_deals',JSON.stringify(a));}catch(e){} }
     function patch(deal){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE+'?deal_id=eq.'+encodeURIComponent(deal.id),{method:'PATCH',headers:Object.assign({Prefer:'return=minimal'},hdr()),body:JSON.stringify({data:deal})}).then(function(r){return r.ok;}).catch(function(){localPatch(deal);return false;}); } localPatch(deal); return Promise.resolve(true); }
@@ -445,7 +445,7 @@
       '<span class="status '+d.status+'">'+(d.status==='funding'?'Funding':'Live')+'</span>'+
       '<span class="risk '+d.risk+'">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span></div>';
   }
-  function renderDeals(){
+  function renderDeals(openQA){
     var el=$('#deals-list');
     el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px">Loading your deals…</div>';
     Promise.all([Promise.resolve(DB.list()), Promise.resolve(DB.allQuestions())]).then(function(res){
@@ -458,8 +458,12 @@
                             : '<div style="color:var(--muted);font-size:13px;padding:8px 0 12px">No deals published yet. Build one in <b>New investment</b> and hit Publish — it\u2019ll appear here and on the investor site.</div>';
       if(arch.length){ html+='<h2 style="margin:20px 0 6px">Archived</h2>'+arch.map(function(d){return pubRow(d,true,unq[d.id]||0);}).join(''); }
       el.innerHTML=html;
-      bindDealActions(active.concat(arch));
+      var all=active.concat(arch);
+      bindDealActions(all);
       updateAdminCountdowns();
+      if(openQA){ var dd=null; all.forEach(function(x){if(x.id===openQA)dd=x;}); var qp=root.querySelector('#qp-'+openQA);
+        if(qp&&dd){ qp.style.display='block'; qp.innerHTML='<div style="font-size:12px;color:var(--muted)">Loading…</div>';
+          Promise.resolve(DB.questions(openQA)).then(function(rows){ renderQAadmin(qp,rows,dd); }); } }
     });
   }
   function capr(s){ return (s||'').charAt(0).toUpperCase()+(s||'').slice(1); }
@@ -499,7 +503,7 @@
     panel.querySelectorAll('.qa-send-admin').forEach(function(b){ b.onclick=function(){
       var id=b.dataset.id, inp=panel.querySelector('.qa-reply[data-id="'+id+'"]'), ans=(inp.value||'').trim(); if(!ans)return;
       b.textContent='…';
-      Promise.resolve(DB.answer(id,ans)).then(function(){ Promise.resolve(DB.questions(d.id)).then(function(rows2){ renderQAadmin(panel,rows2,d); refreshQADot(); }); });
+      Promise.resolve(DB.answer(id,ans)).then(function(){ refreshQADot(); renderDeals(d.id); });
     }; });
   }
   function refreshQADot(){ Promise.resolve(DB.allQuestions()).then(function(rows){ var un=(rows||[]).filter(function(q){return !q.answer;}).length; var dot=$('#qa-dot'); if(dot){ dot.style.display = un>0?'inline-block':'none'; dot.title=un+' unanswered question'+(un===1?'':'s'); } }); }
@@ -650,10 +654,11 @@
   }
   $('#publish').onclick=function(){
     var btn=this; btn.textContent='Publishing…';
-    Promise.resolve(DB.add(buildDealObject())).then(function(){
+    Promise.resolve(DB.add(buildDealObject())).then(function(ok){
       var d=$('#pub-done'); d.style.display='block';
-      d.textContent = DB.on ? '✓ Published to the live investor site — investors will see it next time the app loads.'
-                            : '✓ Published — saved in this browser. Add your Supabase keys (see DEPLOY.md) to share it across devices.';
+      if(DB.on && ok){ d.style.color='var(--sage)'; d.textContent='✓ Published to the live investor site — investors will see it next time the app loads.'; }
+      else if(DB.on && !ok){ d.style.color='var(--danger)'; d.textContent='⚠ Couldn\u2019t save to the shared database — saved in this browser only. Check the Supabase keys and table permissions.'; }
+      else { d.style.color='var(--sage)'; d.textContent='✓ Saved in this browser. Add your Supabase keys (DEPLOY.md) to share across devices.'; }
       btn.textContent='Publish investment';
     });
   };
