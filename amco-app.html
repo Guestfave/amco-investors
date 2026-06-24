@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <div id="amco-app">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -162,6 +164,33 @@
   #amco-app a:focus-visible,#amco-app button:focus-visible,#amco-app select:focus-visible{ outline:2px solid var(--clay); outline-offset:2px; }
   @media (max-width:760px){ #amco-app .grid,#amco-app .grid2{ grid-template-columns:1fr; } #amco-app .side{ border-left:none; border-top:1px solid var(--rule); flex:1 1 100%; flex-direction:row; align-items:center; flex-wrap:wrap; } #amco-app .stats{ grid-template-columns:repeat(2,1fr);} #amco-app .hero h1{ font-size:32px;} #amco-app .dhero h1{ font-size:23px;} }
   @media (prefers-reduced-motion: reduce){ #amco-app *{ transition:none !important; animation:none !important; } }
+  @media (max-width:600px){
+    #amco-app .wrap{ padding:0 15px; }
+    #amco-app .nav{ padding:11px 15px; gap:8px; }
+    #amco-app .navlinks{ width:100%; flex-wrap:nowrap; overflow-x:auto; gap:18px; padding:3px 0 1px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    #amco-app .navlinks::-webkit-scrollbar{ display:none; }
+    #amco-app .navlinks a{ white-space:nowrap; flex:0 0 auto; }
+    #amco-app .hero{ padding:26px 0 20px; }
+    #amco-app .hero h1{ font-size:26px; }
+    #amco-app .lead{ font-size:15px; }
+    #amco-app #page-welcome h1{ font-size:27px !important; }
+    #amco-app #page-welcome .lead{ font-size:14.5px; }
+    #amco-app .grid{ grid-template-columns:1fr; }
+    #amco-app .thumb{ flex:1 1 100%; min-height:116px; }
+    #amco-app .lbody{ padding:15px 16px; }
+    #amco-app .stats{ grid-template-columns:repeat(2,1fr); }
+    #amco-app .strip{ padding:18px; gap:13px; }
+    #amco-app .dhero{ gap:14px; }
+    #amco-app .dhero h1{ font-size:22px; }
+    #amco-app .heroimg{ min-height:150px; }
+    #amco-app .head{ padding:20px 0 8px; }
+    #amco-app .filters{ gap:8px; }
+    #amco-app .brow{ flex-direction:column; align-items:stretch; }
+    #amco-app .brow > div:last-child{ display:flex; gap:8px; }
+    #amco-app .brow > div:last-child .btn{ flex:1; }
+    #amco-app .binput{ gap:10px; }
+    #amco-app .bfield input{ width:120px; font-size:20px; }
+  }
 </style>
 
 <!-- NAV -->

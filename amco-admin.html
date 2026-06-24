@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <div id="amco-admin">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -100,6 +102,17 @@
 
   #amco-admin a:focus-visible,#amco-admin button:focus-visible,#amco-admin input:focus-visible,#amco-admin select:focus-visible{ outline:2px solid var(--clay); outline-offset:1px; }
   @media (max-width:820px){ #amco-admin .hgrid,#amco-admin .grid2,#amco-admin .cols{ grid-template-columns:1fr; } #amco-admin .mgrid,#amco-admin .qstrip{ grid-template-columns:repeat(2,1fr); } #amco-admin .out{ position:static; } }
+  @media (max-width:600px){
+    #amco-admin .wrap{ padding:16px 15px; }
+    #amco-admin .top{ padding:11px 15px; gap:8px; }
+    #amco-admin .navlinks{ width:100%; display:flex; flex-wrap:nowrap; overflow-x:auto; gap:16px; padding:3px 0 1px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    #amco-admin .navlinks::-webkit-scrollbar{ display:none; }
+    #amco-admin .navlinks a{ margin-left:0; white-space:nowrap; flex:0 0 auto; }
+    #amco-admin .drow{ flex-wrap:wrap; gap:8px 10px; padding:14px 0; }
+    #amco-admin .drow h4{ font-size:13.5px; }
+    #amco-admin .drow .pact{ flex:1 1 auto; }
+    #amco-admin .mgrid,#amco-admin .qstrip{ grid-template-columns:repeat(2,1fr); }
+  }
 </style>
 
 <div id="admin-gate">
