@@ -413,10 +413,11 @@
     <div class="grid2" style="margin-bottom:16px">
       <div class="card">
         <h2>Model your stake</h2>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-          <div class="stepper"><button id="minus">−</button><input id="shares" value="5" inputmode="numeric"><button id="plus">+</button></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div class="stepper"><button id="minus">−</button><input id="shares" value="1" inputmode="numeric"><button id="plus">+</button></div>
           <div style="font-size:12px;color:var(--muted)">shares × <span id="d-price2"></span><br><b id="m-total" style="color:var(--ink)"></b> total</div>
         </div>
+        <div id="d-minnote" style="font-size:11px;color:var(--muted);margin:0 0 14px"></div>
         <div class="kv"><span>Capital back at refinance</span><b id="m-cashout"></b></div>
         <div class="kv"><span>Stays invested</span><b id="m-leftin"></b></div>
         <div class="kv"><span>Income from day one</span><b id="m-day"></b></div>
@@ -480,7 +481,7 @@
       <p class="lead" style="margin-top:10px">Enter what you could invest and see which live deals you could buy into. This shows what fits — it isn't a recommendation or advice.</p></div>
     <div class="card">
       <div class="binput">
-        <div><div class="eyebrow" style="margin-bottom:6px">Amount available</div><div class="bfield"><span style="color:var(--muted)">£</span> <input id="b-amount" value="5000" inputmode="numeric"></div></div>
+        <div><div class="eyebrow" style="margin-bottom:6px">Amount available</div><div class="bfield"><span style="color:var(--muted)">£</span> <input id="b-amount" value="" placeholder="5,000" inputmode="numeric"></div></div>
         <div><div class="eyebrow" style="margin-bottom:6px">Risk comfort</div>
           <select id="b-risk"><option value="all">Any</option><option value="low">Low only</option><option value="medium">Up to medium</option><option value="high">Up to high</option></select></div>
       </div>
@@ -712,7 +713,9 @@
     var dc=q('#d-details-card');
     if(d.details && d.details.length){ q('#d-details').innerHTML=d.details.map(function(r){return '<div class="kv"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join(''); dc.style.display=''; } else { dc.style.display='none'; }
     q('#d-reasons').innerHTML=d.reasons.map(function(r){return '<li style="margin-bottom:6px">'+r+'</li>';}).join('');
-    root.querySelector('#shares').value=5; renderStake();
+    var min=Math.max(1, d.minShares||1);
+    root.querySelector('#shares').value=min; renderStake();
+    root.querySelector('#d-minnote').textContent='Minimum '+min+' share'+(min>1?'s':'')+' to invest · '+f(min*d.sharePrice)+' minimum';
     updateCountdowns();
     loadQA(d.id);
     markDealAnsSeen(d.id); refreshReplyDot(); renderList();
@@ -741,7 +744,8 @@
     });
   };
   function renderStake(){
-    if(!current)return; var d=current; var n=Math.max(1,parseInt(root.querySelector('#shares').value)||1);
+    if(!current)return; var d=current; var min=Math.max(1, d.minShares||1);
+    var n=Math.max(min,parseInt(root.querySelector('#shares').value)||min);
     root.querySelector('#shares').value=n; var p=d.per;
     root.querySelector('#m-total').textContent=f(n*d.sharePrice);
     root.querySelector('#m-cashout').textContent=f(n*p.cashout);
@@ -752,10 +756,10 @@
     root.querySelector('#m-sh').textContent=n;
   }
   root.querySelector('#plus').onclick=function(){var i=root.querySelector('#shares');i.value=(parseInt(i.value)||0)+1;renderStake();};
-  root.querySelector('#minus').onclick=function(){var i=root.querySelector('#shares');i.value=Math.max(1,(parseInt(i.value)||1)-1);renderStake();};
+  root.querySelector('#minus').onclick=function(){var i=root.querySelector('#shares');var min=Math.max(1,(current&&current.minShares)||1);i.value=Math.max(min,(parseInt(i.value)||min)-1);renderStake();};
   root.querySelector('#shares').oninput=renderStake;
-  root.querySelector('#d-invest').onclick=function(){openInvest(current,5);};
-  root.querySelector('#m-invest').onclick=function(){openInvest(current,Math.max(1,parseInt(root.querySelector('#shares').value)||1));};
+  root.querySelector('#d-invest').onclick=function(){ var min=Math.max(1,(current&&current.minShares)||1); openInvest(current,Math.max(min,parseInt(root.querySelector('#shares').value)||min));};
+  root.querySelector('#m-invest').onclick=function(){ var min=Math.max(1,(current&&current.minShares)||1); openInvest(current,Math.max(min,parseInt(root.querySelector('#shares').value)||min));};
 
   /* invest stub */
   var curInvest=null;

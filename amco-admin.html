@@ -270,6 +270,7 @@
         <div class="sec">Shares &amp; timing</div>
         <div class="frow">
           <label class="afield"><span>Number of shares</span><div class="ig"><input class="tnum num" id="f-shares" value="" placeholder="0"></div></label>
+          <label class="afield"><span>Min shares per investor</span><div class="ig"><input class="tnum num" id="f-minshares" value="" placeholder="1"></div></label>
           <label class="afield"><span>Amco co-invests</span><div class="ig"><input class="tnum num" id="f-coinv" value="25"><span class="pre">%</span></div></label>
           <label class="afield"><span>Refinance by</span><div class="ig"><input class="tnum num" id="f-loanmo" value="10"><span class="pre">mo</span></div></label>
           <label class="afield"><span>Closes on</span><div class="ig"><input type="date" id="f-close" style="border:none;outline:none;font-size:13px;width:100%"></div></label>
@@ -706,7 +707,7 @@
       var baths=UNITS.reduce(function(a,u){return a+(parseFloat(u.baths)||0);},0); arr.push(['Total bathrooms', baths||'NA']);
       return arr;
     }
-    if(cat==='house') return [['Bedrooms',v('cd-beds')],['Bathrooms',v('cd-baths')],['Floor area (sq ft)',v('cd-area')]];
+    if(cat==='house') return [['House type',v('cd-htype')],['Bedrooms',v('cd-beds')],['Bathrooms',v('cd-baths')],['Floor area (sq ft)',v('cd-area')]];
     if(cat==='portfolio') return [['Houses',v('cd-houses')],['Avg bedrooms each',v('cd-beds')],['Avg bathrooms each',v('cd-baths')]];
     if(cat==='hmo') return [['Lettable rooms',v('cd-rooms')],['Bathrooms',v('cd-baths')],['Shared kitchens',v('cd-kit')]];
     if(cat==='office'||cat==='retail'||cat==='leisure') return [['Units',v('cd-units')],['Floor area (sq ft)',v('cd-area')],['Use class',v('cd-use')]];
@@ -739,7 +740,7 @@
     return {
       id:'pub_'+Date.now(), publishedAt:Date.now(), title:($('#f-name').value||'Untitled deal').trim(), desc:($('#f-desc').value||'').trim(),
       loc:catLabel+' · '+typeLabel, tag:typeLabel+' · '+catLabel, type:typeV, risk:risk, riskN:riskN,
-      closesDays:closesDays, closeAt:closeAt, fundingPct:0, sharesLeft:shares, sharesTotal:shares, sharePrice:sharePrice,
+      closesDays:closesDays, closeAt:closeAt, fundingPct:0, sharesLeft:shares, sharesTotal:shares, sharePrice:sharePrice, minShares:Math.max(1, n('f-minshares')||1),
       dayYield:pctS(dayYield), refiYield:pctS(refiYield), capBack:Math.round(capBack*100)+'%', grad:grad,
       worksTxt: works>0? gbpr(works)+' of works to lift the property and its income.' : 'Bought ready to let.',
       loanMonths:'By month '+loanmo,
@@ -751,7 +752,7 @@
     };
   }
   function clearForm(){
-    ['f-name','f-desc','f-price','f-legals','f-works','f-value','f-cur','f-aft','f-ins','f-shares','f-sdlt','f-plat'].forEach(function(id){ var el=$('#'+id); if(el) el.value=''; });
+    ['f-name','f-desc','f-price','f-legals','f-works','f-value','f-cur','f-aft','f-ins','f-shares','f-minshares','f-sdlt','f-plat'].forEach(function(id){ var el=$('#'+id); if(el) el.value=''; });
     $('#f-ltv').value='70'; $('#f-rate').value='5.5'; $('#f-loanfee').value='2'; $('#f-mgmt').value='10'; $('#f-coinv').value='25'; $('#f-loanmo').value='10';
     $('#f-type').value='residential'; $('#f-vat').value='1'; $('#f-cur-u').value='12'; $('#f-aft-u').value='12';
     var dd2=new Date(Date.now()+9*86400000); $('#f-close').value=dd2.toISOString().slice(0,10);
@@ -816,7 +817,12 @@
       $('#cd-apts').addEventListener('input',function(){ syncUnits(parseInt(String(this.value).replace(/,/g,''))||0); renderUnits(); });
     } else {
       var fs=catFields(cat);
-      box.innerHTML='<div class="sec">Property breakdown</div><div class="frow">'+fs.map(function(f){return '<label class="afield"><span>'+f[0]+'</span><div class="ig"><input class="tnum" id="'+f[1]+'" value="'+f[2]+'"></div></label>';}).join('')+'</div>';
+      var extra='';
+      if(cat==='house'){
+        var htypes=['Detached','Semi-detached','Terraced','Mid-terrace','End of terrace','Quasi-semi','Bungalow'];
+        extra='<label class="afield"><span>House type</span><div class="ig"><select class="tnum" id="cd-htype" style="width:100%;border:none;background:none;outline:none;font-family:inherit;font-size:13px;color:var(--ink)">'+htypes.map(function(h){return '<option>'+h+'</option>';}).join('')+'</select></div></label>';
+      }
+      box.innerHTML='<div class="sec">Property breakdown</div><div class="frow">'+extra+fs.map(function(f){return '<label class="afield"><span>'+f[0]+'</span><div class="ig"><input class="tnum" id="'+f[1]+'" value="'+f[2]+'"></div></label>';}).join('')+'</div>';
     }
   }
   var CATS={
