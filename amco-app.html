@@ -756,10 +756,11 @@
     var rf=root.querySelector('#b-risk').value;
     var maxRisk={all:3,low:1,medium:2,high:3}[rf];
     var box=root.querySelector('#b-results'); box.innerHTML='';
+    if(!DEALS.length){ box.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 2px">No live deals yet — check back soon.</div>'; return; }
     var matches=DEALS.filter(function(d){return d.sharePrice<=amt && d.riskN<=maxRisk;});
     if(matches.length===0){
       var cheapest=DEALS.slice().sort(function(a,b){return a.sharePrice-b.sharePrice;})[0];
-      box.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 2px">From '+f(cheapest.sharePrice)+' you could buy a share in '+cheapest.title+'. Increase your amount to see deals you can invest in.</div>';
+      if(cheapest){ box.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 2px">From '+f(cheapest.sharePrice)+' you could buy a share in '+cheapest.title+'. Increase your amount to see deals you can invest in.</div>'; }
       return;
     }
     matches.forEach(function(d){
