@@ -376,7 +376,7 @@
     root.querySelectorAll('.navlinks a[data-go]').forEach(function(a){a.classList.toggle('active', a.dataset.go===name);});
     $('.top').scrollIntoView({block:'start'});
   }
-  root.addEventListener('click',function(e){ var g=e.target.closest('[data-go]'); if(g){ e.preventDefault(); go(g.dataset.go); } });
+  root.addEventListener('click',function(e){ var g=e.target.closest('[data-go]'); if(g){ e.preventDefault(); if(g.dataset.go==='new'){ clearForm(); } go(g.dataset.go); } });
 
   /* home stats */
   (function(){
@@ -846,16 +846,33 @@
       details: propDetails()
     };
   }
+  function reconstructRaw(d){
+    function num(s){ return parseFloat(String(s==null?'':s).replace(/[^0-9.]/g,''))||0; }
+    function bd(label){ var f=(d.breakdown||[]).filter(function(r){return r[0]===label;})[0]; return f?num(f[1]):0; }
+    var price=bd('Purchase price'), legals=bd('Legals'), works=bd('Works'), value=bd('Value after works'), loan=bd('Refinance loan'), aft=bd('Income (stabilised)');
+    var ins=(d.stmt&&d.stmt.insYr)||0, intYr=(d.stmt&&d.stmt.intYr)||0, shares=d.sharesTotal||0;
+    var ltv=value?Math.round(loan/value*100):70;
+    var rate=loan?Math.round(intYr/loan*1000)/10:5.5;
+    var netReleased=(d.per&&d.per.cashout)?d.per.cashout*shares:loan;
+    var loanFee=loan?Math.max(0,Math.round((loan-netReleased)/loan*1000)/10):2;
+    var dayNet=(d.per&&d.per.day)?d.per.day*shares:0;
+    var cur=Math.max(0, Math.round((dayNet+ins)/0.9));
+    var catLabel=((d.tag||'').split(' · ')[1]||'').trim(), cat='';
+    (CATS[d.type]||[]).forEach(function(c){ if(c[1]===catLabel) cat=c[0]; });
+    var closeStr=''; if(d.closeAt){ var dt=new Date(d.closeAt); if(!isNaN(dt.getTime())){ closeStr=dt.toISOString().slice(0,10); } }
+    return { name:d.title||'', desc:d.desc||'', type:d.type||'residential', cat:cat,
+      price:price, legals:legals, works:works, value:value, ltv:ltv, rate:rate, loanFee:loanFee,
+      cur:cur, curU:'1', aft:aft, aftU:'1', mgmt:10, vat:'0', ins:ins, plat:0,
+      shares:shares, minShares:d.minShares||1, coinv:25, loanmo:10, close:closeStr,
+      risk:d.risk||'low', cd:{}, units:[], _recon:true };
+  }
   function populateForm(d){
     var r=d.raw;
     EDIT_ID=d.id; EDIT_DEAL=d;
     $('#publish').textContent='Save changes';
-    var banner=$('#edit-banner'); if(banner){ banner.style.display='block'; banner.textContent='Editing: '+(d.title||'deal')+' — change anything and Save.'; }
-    if(!r){ // older deal without raw inputs — prefill what we can, then open the builder
-      $('#f-name').value=d.title||''; $('#f-desc').value=d.desc||''; recompute(); validate();
-      var bn=$('#edit-banner'); if(bn) bn.textContent='Editing: '+(d.title||'deal')+' — this deal predates full edit, so re-enter the figures, then Save.';
-      go('new'); return;
-    }
+    var banner=$('#edit-banner'); if(banner) banner.style.display='block';
+    if(!r){ r=reconstructRaw(d); if(banner) banner.innerHTML='Editing <b>'+escr(d.title||'deal')+'</b> — figures rebuilt from the saved deal. The core numbers are restored; just double-check the day-one rent and management %, then Save.'; }
+    else if(banner){ banner.textContent='Editing: '+(d.title||'deal')+' — change anything and Save.'; }
     $('#f-name').value=r.name||''; $('#f-desc').value=r.desc||'';
     $('#f-type').value=r.type||'residential'; populateCats(r.type||'residential');
     if(r.cat){ $('#f-cat').value=r.cat; renderCatDetail(r.cat); }
