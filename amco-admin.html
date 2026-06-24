@@ -388,27 +388,44 @@
 
   /* overview */
   function renderOverview(){
-    var raised=DEALS.reduce(function(a,d){return a+raisedOf(d);},0);
-    var aum=DEALS.filter(function(d){return d.status==='live';}).reduce(function(a,d){return a+d.value;},0);
-    var inv=DEALS.reduce(function(a,d){return a+d.investors;},0);
-    var amco=DEALS.reduce(function(a,d){return a+d.amco*(raisedOf(d)/d.totalIn);},0);
-    var distributed=DEALS.reduce(function(a,d){return a+d.distributed;},0);
-    var returned=DEALS.reduce(function(a,d){return a+d.returned;},0);
-    var m=[['raised','Capital raised',gbpm(raised),'across all deals'],['aum','Live deals AUM',gbpm(aum),'property value'],['investors','Total investors',inv.toLocaleString('en-GB'),'across deals'],['amco','Amco co-invested',gbpm(amco),'our own money'],['distributed','Income distributed',gbp(distributed),'to date'],['returned','Capital returned',gbpm(returned),'to investors'],['funding','In funding',DEALS.filter(function(d){return d.status==='funding';}).length,'raising now'],['live','Live & earning',DEALS.filter(function(d){return d.status==='live';}).length,'holding']];
-    $('#ov-metrics').innerHTML=m.map(function(x){return '<div class="card m mtile" data-metric="'+x[0]+'" style="padding:13px;cursor:pointer"><div class="k">'+x[1]+'</div><div class="v">'+x[2]+'</div><div class="s">'+x[3]+' →</div></div>';}).join('');
-    root.querySelectorAll('#ov-metrics .mtile').forEach(function(t){ t.onclick=function(){ openMetric(t.dataset.metric); }; });
+    $('#ov-metrics').innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px">Loading…</div>';
+    Promise.all([Promise.resolve(DB.list()), Promise.resolve(DB.allCommitments()), Promise.resolve(DB.allQuestions())]).then(function(res){
+      var deals=(res[0]||[]).filter(function(d){return d && !d.archived;});
+      var commits=res[1]||[], qs=res[2]||[];
+      var priceById={}; deals.forEach(function(d){ priceById[d.id]=d.sharePrice||0; });
+      var raiseTarget=deals.reduce(function(a,d){return a+(d.sharePrice||0)*(d.sharesTotal||0);},0);
+      var committedShares=0, committedValue=0, investors={}, cmap={};
+      commits.forEach(function(c){ if(priceById[c.deal_id]===undefined) return; var sh=parseInt(c.shares)||0; committedShares+=sh; committedValue+=sh*priceById[c.deal_id]; var who=(c.email||c.name||'').toLowerCase(); if(who) investors[who]=1; cmap[c.deal_id]=(cmap[c.deal_id]||0)+1; });
+      var unanswered=qs.filter(function(q){ return !q.answer && priceById[q.deal_id]!==undefined; }).length;
+      var seenC=getSeenCommits(), newCommits=0; Object.keys(cmap).forEach(function(k){ newCommits+=Math.max(0,cmap[k]-(seenC[k]||0)); });
+      var amco=raiseTarget*0.25, pctC=raiseTarget>0?Math.round(committedValue/raiseTarget*100):0;
+      var m=[
+        ['Live deals', deals.length, 'open to investors'],
+        ['Raise target', gbpm(raiseTarget), 'across live deals'],
+        ['Committed', gbpm(committedValue), pctC+'% of target'],
+        ['Investors', Object.keys(investors).length, 'have committed'],
+        ['Shares reserved', committedShares.toLocaleString('en-GB'), 'of '+deals.reduce(function(a,d){return a+(d.sharesTotal||0);},0).toLocaleString('en-GB')],
+        ['Amco co-invest', gbpm(amco), '25% alongside'],
+        ['Open questions', unanswered, 'awaiting reply'],
+        ['Avg share price', deals.length?gbp(Math.round(deals.reduce(function(a,d){return a+(d.sharePrice||0);},0)/deals.length)):'£0', 'per deal']
+      ];
+      $('#ov-metrics').innerHTML=m.map(function(x){return '<div class="card m" style="padding:13px"><div class="k">'+x[0]+'</div><div class="v">'+x[1]+'</div><div class="s">'+x[2]+'</div></div>';}).join('');
 
-    $('#ov-raising').innerHTML=DEALS.filter(function(d){return d.status==='funding';}).map(function(d){
-      var p=Math.round(d.sold/d.shares*100);
-      return '<div style="padding:9px 0;border-bottom:1px solid var(--rule)"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><b>'+d.name+'</b><span style="color:var(--muted)">'+p+'% · closes '+d.closesDays+'d</span></div><div class="bar"><i style="width:'+p+'%"></i></div></div>';
-    }).join('');
+      $('#ov-raising').innerHTML = deals.length ? deals.map(function(d){
+        var dShares=0; commits.forEach(function(c){ if(c.deal_id===d.id) dShares+=parseInt(c.shares)||0; });
+        var p=d.sharesTotal? Math.round(dShares/d.sharesTotal*100):0;
+        return '<div style="padding:9px 0;border-bottom:1px solid var(--rule)"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><b>'+escr(d.title||'')+'</b><span style="color:var(--muted)">'+p+'% · '+dShares+'/'+(d.sharesTotal||0)+' shares</span></div><div class="bar"><i style="width:'+Math.min(100,p)+'%"></i></div></div>';
+      }).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0">No live deals yet. Publish one in <b>New investment</b>.</div>';
 
-    $('#ov-attention').innerHTML = DEALS.length
-      ? '<div style="padding:8px 0">Nothing needs attention right now.</div>'
-      : '<div style="padding:8px 0;color:var(--muted)">No deals yet. Publish one in <b>New investment</b> to get started.</div>';
+      var att=[];
+      if(unanswered>0) att.push('💬 <b>'+unanswered+'</b> unanswered question'+(unanswered===1?'':'s')+' — open a deal to reply.');
+      if(newCommits>0) att.push('👤 <b>'+newCommits+'</b> new commitment'+(newCommits===1?'':'s')+' — open the deal to review.');
+      $('#ov-attention').innerHTML = att.length ? att.map(function(t){return '<div style="padding:8px 0;border-bottom:1px solid var(--rule)">'+t+'</div>';}).join('')
+        : (deals.length ? '<div style="padding:8px 0;color:var(--muted)">All caught up — nothing needs attention.</div>' : '<div style="padding:8px 0;color:var(--muted)">No deals yet. Publish one in <b>New investment</b>.</div>');
 
-    $('#ov-deals').innerHTML = DEALS.length ? DEALS.map(dealRow).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0">Published deals appear on the <b>Deals</b> page.</div>';
-    bindRows('#ov-deals');
+      $('#ov-deals').innerHTML = deals.length ? deals.map(function(d){ return '<div class="ovdeal" data-id="'+escr(d.id)+'" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule);cursor:pointer"><div><b style="font-size:13.5px">'+escr(d.title||'')+'</b><div style="font-size:11.5px;color:var(--muted)">'+escr(d.tag||'')+' · '+gbp(d.sharePrice||0)+'/share</div></div><span style="font-size:12px;color:var(--clay);font-weight:700">Open →</span></div>'; }).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0">Published deals appear here and on the Deals page.</div>';
+      root.querySelectorAll('#ov-deals .ovdeal').forEach(function(el){ el.onclick=function(){ var dd=deals.filter(function(x){return x.id===el.dataset.id;})[0]; if(dd) openPubDeal(dd); }; });
+    });
   }
 
   function mtable(cols,rows){
@@ -471,16 +488,21 @@
   function getSeenCommits(){ try{return JSON.parse(window.localStorage.getItem('amco_seen_commits')||'{}');}catch(e){return {};} }
   function setSeenCommit(id,count){ var s=getSeenCommits(); s[id]=count; try{window.localStorage.setItem('amco_seen_commits',JSON.stringify(s));}catch(e){} }
   function openPubDeal(d){
+    if(!d) return;
     var closeAt=d.closeAt||(Date.now()+((d.closesDays||14)*86400000));
     var kv=function(arr){ return (arr||[]).map(function(r){return '<div class="kv"><span>'+escr(r[0])+'</span><b>'+escr(r[1])+'</b></div>';}).join(''); };
     var p=d.per||{};
-    var figs=[['Share price',gbp(d.sharePrice||0)],['Shares',d.sharesTotal||'—'],['Day-one yield',d.dayYield||'—'],['After-refi yield',d.refiYield||'—'],['Capital back',d.capBack||'—'],['Status',d.archived?'Archived':'Live']];
+    var figs=[['Share price',gbp(d.sharePrice||0)],['Total shares',d.sharesTotal||'—'],['Min per investor',(d.minShares||1)+' share'+((d.minShares||1)>1?'s':'')],['Day-one yield',d.dayYield||'—'],['After-refi yield',d.refiYield||'—'],['Capital back',d.capBack||'—'],['Status',d.archived?'Archived':'Live']];
     var perRows=[['Cash back at refinance',gbp(p.cashout||0)],['Money left in',gbp(p.leftIn||0)],['Income day one',gbp(p.day||0)+' / yr'],['Income after refi',gbp(p.refi||0)+' / yr']];
+    var actions = d.archived
+      ? '<button class="btn btn-ghost" id="pd2-restore" style="font-size:12.5px">Restore</button><button class="btn" id="pd2-delete" style="font-size:12.5px;background:var(--danger);border-color:var(--danger)">Delete permanently</button>'
+      : '<button class="btn btn-ghost" id="pd2-archive" style="font-size:12.5px">Archive</button>';
     var html='<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+
       '<div class="dswatch" style="width:48px;height:48px;flex:0 0 48px;background:'+(d.grad||'linear-gradient(135deg,#3F7A5C,#2C5D6B)')+'"></div>'+
       '<div style="flex:1"><h1 class="disp" style="font-size:24px;margin:0">'+escr(d.title||'(untitled)')+'</h1><div style="font-size:12.5px;color:var(--muted)">'+escr(d.tag||'')+(d.desc?' · '+escr(d.desc):'')+'</div></div>'+
       '<span class="risk '+(d.risk||'low')+'">'+capr(d.risk)+'</span></div>'+
-      '<div class="closes admin-cd" data-dl="'+closeAt+'" style="font-weight:700;font-size:13px;margin-bottom:16px"><span class="cd"></span></div>'+
+      '<div class="closes admin-cd" data-dl="'+closeAt+'" style="font-weight:700;font-size:13px;margin-bottom:14px"><span class="cd"></span></div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">'+actions+'</div>'+
       '<div class="grid2">'+
         '<div class="card"><h2>Key figures</h2>'+kv(figs)+'</div>'+
         '<div class="card"><h2>The deal, in full</h2>'+kv(d.breakdown)+'</div>'+
@@ -489,11 +511,18 @@
         '<div class="card"><h2>Property details</h2>'+((d.details&&d.details.length)?kv(d.details):'<div style="color:var(--muted);font-size:13px">None provided.</div>')+'</div>'+
         '<div class="card"><h2>Per share</h2>'+kv(perRows)+'</div>'+
       '</div>'+
+      '<div class="card" style="margin-top:16px"><h2>Committed investors</h2><div id="pd2-commits"><div style="font-size:12px;color:var(--muted)">Loading…</div></div></div>'+
+      '<div class="card" style="margin-top:16px"><h2>Questions &amp; answers</h2><div id="pd2-qa"><div style="font-size:12px;color:var(--muted)">Loading…</div></div></div>'+
       '<div class="card" style="margin-top:16px"><h2>Why this risk rating</h2><ul style="margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)">'+(d.reasons||[]).map(function(r){return '<li style="margin-bottom:6px">'+escr(r)+'</li>';}).join('')+'</ul></div>'+
       '<div style="margin-top:16px"><a class="btn btn-ghost" data-go="deals">← Back to deals</a></div>';
     $('#pd2-content').innerHTML=html;
     $('#pd2-crumb').textContent=d.title||'Deal';
     go('pubdeal'); updateAdminCountdowns();
+    Promise.resolve(DB.commitments(d.id)).then(function(rows){ renderCommits($('#pd2-commits'),rows,d); setSeenCommit(d.id,(rows||[]).length); refreshQADot(); });
+    Promise.resolve(DB.questions(d.id)).then(function(rows){ renderQAadmin($('#pd2-qa'),rows,d); });
+    var ar=$('#pd2-archive'); if(ar) ar.onclick=function(){ d.archived=true; ar.textContent='…'; Promise.resolve(DB.patch(d)).then(function(){ refreshQADot(); renderDeals(); go('deals'); }); };
+    var rs=$('#pd2-restore'); if(rs) rs.onclick=function(){ d.archived=false; rs.textContent='…'; Promise.resolve(DB.patch(d)).then(function(){ renderDeals(); go('deals'); }); };
+    var dl=$('#pd2-delete'); if(dl) dl.onclick=function(){ if(window.confirm('Permanently delete \u201c'+(d.title||'this deal')+'\u201d? This cannot be undone.')){ dl.textContent='…'; Promise.resolve(DB.remove(d.id)).then(function(){ renderDeals(); go('deals'); }); } };
   }
   function renderDeals(openQA){
     var el=$('#deals-list');
@@ -521,30 +550,23 @@
   }
   function capr(s){ return (s||'').charAt(0).toUpperCase()+(s||'').slice(1); }
   function escr(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var ICON_MSG='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/></svg>';
+  var ICON_PPL='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+  function notifBadge(svg,count,label){ return '<span title="'+label+'" style="display:inline-flex;align-items:center;gap:4px;background:var(--clay);color:#fff;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800;line-height:1">'+svg+count+'</span>'; }
   function pubRow(d,archived,unanswered,newCommits){
     unanswered=unanswered||0; newCommits=newCommits||0;
     var closeAt=d.closeAt||(Date.now()+((d.closesDays||14)*86400000));
-    var titleDot = unanswered>0 ? ' <span title="'+unanswered+' unanswered question'+(unanswered===1?'':'s')+'" style="display:inline-block;width:9px;height:9px;border-radius:99px;background:var(--clay);vertical-align:middle;margin-left:5px"></span>' : '';
-    var qBtn = unanswered>0
-      ? '<button class="btn pact" data-act="qa" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px;background:var(--clay);border-color:var(--clay)">Questions <span style="background:#fff;color:var(--clay);border-radius:99px;padding:0 6px;font-weight:800;margin-left:2px">'+unanswered+'</span></button>'
-      : '<button class="btn btn-ghost pact" data-act="qa" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Questions</button>';
-    var cBtn = newCommits>0
-      ? '<button class="btn pact" data-act="commits" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px;background:var(--clay);border-color:var(--clay)">Committed <span style="background:#fff;color:var(--clay);border-radius:99px;padding:0 6px;font-weight:800;margin-left:2px">'+newCommits+'</span></button>'
-      : '<button class="btn btn-ghost pact" data-act="commits" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Committed</button>';
-    return '<div class="deal-wrap">'+
-      '<div class="drow" style="opacity:'+(archived?'0.7':'1')+'"><div class="dswatch" style="background:'+(d.grad||'linear-gradient(135deg,#3F7A5C,#2C5D6B)')+'"></div>'+
-      '<div style="flex:1 1 150px"><h4>'+escr(d.title||'(untitled deal)')+titleDot+'</h4><div class="sub">'+escr(d.tag||'')+' · '+gbp(d.sharePrice||0)+'/share</div></div>'+
+    var icons='';
+    if(unanswered>0) icons+=notifBadge(ICON_MSG,unanswered,unanswered+' unanswered question'+(unanswered===1?'':'s'));
+    if(newCommits>0) icons+=notifBadge(ICON_PPL,newCommits,newCommits+' new commitment'+(newCommits===1?'':'s'));
+    return '<div class="drow deal-open" data-id="'+escr(d.id)+'" style="cursor:pointer;opacity:'+(archived?'0.7':'1')+'">'+
+      '<div class="dswatch" style="background:'+(d.grad||'linear-gradient(135deg,#3F7A5C,#2C5D6B)')+'"></div>'+
+      '<div style="flex:1 1 150px"><h4>'+escr(d.title||'(untitled deal)')+'</h4><div class="sub">'+escr(d.tag||'')+' · '+gbp(d.sharePrice||0)+'/share</div></div>'+
       (archived?'<span class="status completed" style="flex:0 0 auto">Archived</span>'
                :'<div class="closes admin-cd" data-dl="'+closeAt+'" style="flex:0 0 92px;font-size:12px;font-weight:600;text-align:right"><span class="cd"></span></div>')+
       '<span class="risk '+(d.risk||'low')+'">'+capr(d.risk)+'</span>'+
-      '<button class="btn btn-ink pact" data-act="view" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">View</button>'+
-      cBtn + qBtn +
-      (archived
-        ? '<button class="btn btn-ghost pact" data-act="restore" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Restore</button><button class="btn pact" data-act="remove" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px;background:var(--danger);border-color:var(--danger)">Delete</button>'
-        : '<button class="btn btn-ghost pact" data-act="archive" data-id="'+escr(d.id)+'" style="font-size:12px;padding:7px 12px">Archive</button>')+
-      '</div>'+
-      '<div class="commits-panel" id="cm-'+escr(d.id)+'" style="display:none;padding:12px 14px;border:1px solid var(--rule);border-top:none;border-radius:0 0 12px 12px;margin:-8px 0 10px;background:#FAFAF8"></div>'+
-      '<div class="qa-panel" id="qp-'+escr(d.id)+'" style="display:none;padding:12px 14px;border:1px solid var(--rule);border-top:none;border-radius:0 0 12px 12px;margin:-8px 0 10px;background:#FAFAF8"></div>'+
+      (icons?'<div style="display:flex;gap:6px">'+icons+'</div>':'')+
+      '<span style="font-size:12px;color:var(--clay);font-weight:700;white-space:nowrap">Open \u2192</span>'+
     '</div>';
   }
   function renderQAadmin(panel, rows, d){
@@ -559,7 +581,7 @@
     panel.querySelectorAll('.qa-send-admin').forEach(function(b){ b.onclick=function(){
       var id=b.dataset.id, inp=panel.querySelector('.qa-reply[data-id="'+id+'"]'), ans=(inp.value||'').trim(); if(!ans)return;
       b.textContent='…';
-      Promise.resolve(DB.answer(id,ans)).then(function(){ refreshQADot(); renderDeals(d.id); });
+      Promise.resolve(DB.answer(id,ans)).then(function(){ Promise.resolve(DB.questions(d.id)).then(function(rows2){ renderQAadmin(panel,rows2,d); refreshQADot(); }); });
     }; });
   }
   function refreshQADot(){ Promise.all([Promise.resolve(DB.list()), Promise.resolve(DB.allQuestions()), Promise.resolve(DB.allCommitments())]).then(function(res){
@@ -579,21 +601,7 @@
   }
   function bindDealActions(list){
     var map={}; list.forEach(function(d){map[d.id]=d;});
-    $('#deals-list').querySelectorAll('.pact').forEach(function(b){ b.onclick=function(){
-      var d=map[b.dataset.id]; if(!d)return; var act=b.dataset.act;
-      if(act==='view'){ openPubDeal(d); return; }
-      if(act==='commits'){ var panel=root.querySelector('#cm-'+d.id); if(!panel)return;
-        if(panel.style.display==='none'){ panel.style.display='block'; panel.innerHTML='<div style="font-size:12px;color:var(--muted)">Loading…</div>';
-          Promise.resolve(DB.commitments(d.id)).then(function(rows){ renderCommits(panel,rows,d); setSeenCommit(d.id,(rows||[]).length); b.className='btn btn-ghost pact'; b.style.background=''; b.style.borderColor=''; b.innerHTML='Committed'; refreshQADot(); });
-        } else { panel.style.display='none'; } return; }
-      if(act==='qa'){ var qp=root.querySelector('#qp-'+d.id); if(!qp)return;
-        if(qp.style.display==='none'){ qp.style.display='block'; qp.innerHTML='<div style="font-size:12px;color:var(--muted)">Loading…</div>';
-          Promise.resolve(DB.questions(d.id)).then(function(rows){ renderQAadmin(qp,rows,d); });
-        } else { qp.style.display='none'; } return; }
-      if(act==='archive'){ d.archived=true; b.textContent='…'; Promise.resolve(DB.patch(d)).then(renderDeals); }
-      else if(act==='restore'){ d.archived=false; b.textContent='…'; Promise.resolve(DB.patch(d)).then(renderDeals); }
-      else if(act==='remove'){ if(window.confirm('Permanently delete \u201c'+(d.title||'this deal')+'\u201d? This cannot be undone.')){ b.textContent='…'; Promise.resolve(DB.remove(d.id)).then(renderDeals); } }
-    }; });
+    $('#deals-list').querySelectorAll('.deal-open').forEach(function(row){ row.onclick=function(){ var d=map[row.dataset.id]; if(d) openPubDeal(d); }; });
   }
   function admLeft(dl){ var diff=dl-Date.now(); if(diff<=0)return 'Closed'; var d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000); if(diff<86400000) return '\u23f3 '+h+'h '+m+'m '+s+'s'; return d+'d '+h+'h'; }
   function updateAdminCountdowns(){ root.querySelectorAll('.admin-cd[data-dl]').forEach(function(e){ var dl=Number(e.dataset.dl); var cd=e.querySelector('.cd'); if(cd) cd.textContent=admLeft(dl); var diff=dl-Date.now(); e.style.color=(diff<3*86400000)?'var(--clay)':'var(--muted)'; e.style.fontWeight=(diff>0&&diff<86400000)?'800':'600'; }); }
