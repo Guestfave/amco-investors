@@ -154,6 +154,7 @@
     <div class="eyebrow" style="color:var(--clay)">Overall dashboard</div>
     <h1 class="disp" style="margin:6px 0 16px">The business at a glance</h1>
     <div class="mgrid" id="ov-metrics"></div>
+    <div id="ov-drill" style="margin:4px 0 16px"></div>
     <div class="grid2">
       <div class="card"><h2>Raising now</h2><div id="ov-raising"></div></div>
       <div class="card"><h2>Needs attention</h2><div id="ov-attention" style="font-size:13px"></div></div>
@@ -225,6 +226,7 @@
     <div class="eyebrow" style="color:var(--clay)">New investment</div>
     <h1 class="disp" style="margin:6px 0 2px">Build a deal</h1>
     <p style="font-size:13px;color:var(--muted);margin:0 0 16px">Enter the figures. Everything investors see calculates live on the right.</p>
+    <div id="edit-banner" style="display:none;background:var(--clayBg);border:1px solid var(--clay);color:var(--ink);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin:0 0 16px"></div>
     <div class="cols">
       <div class="card">
         <div class="sec">Property</div>
@@ -400,16 +402,28 @@
       var seenC=getSeenCommits(), newCommits=0; Object.keys(cmap).forEach(function(k){ newCommits+=Math.max(0,cmap[k]-(seenC[k]||0)); });
       var amco=raiseTarget*0.25, pctC=raiseTarget>0?Math.round(committedValue/raiseTarget*100):0;
       var m=[
-        ['Live deals', deals.length, 'open to investors'],
-        ['Raise target', gbpm(raiseTarget), 'across live deals'],
-        ['Committed', gbpm(committedValue), pctC+'% of target'],
-        ['Investors', Object.keys(investors).length, 'have committed'],
-        ['Shares reserved', committedShares.toLocaleString('en-GB'), 'of '+deals.reduce(function(a,d){return a+(d.sharesTotal||0);},0).toLocaleString('en-GB')],
-        ['Amco co-invest', gbpm(amco), '25% alongside'],
-        ['Open questions', unanswered, 'awaiting reply'],
-        ['Avg share price', deals.length?gbp(Math.round(deals.reduce(function(a,d){return a+(d.sharePrice||0);},0)/deals.length)):'£0', 'per deal']
+        ['Live deals', deals.length, 'open to investors','deals'],
+        ['Raise target', gbpm(raiseTarget), 'across live deals','deals'],
+        ['Committed', gbpm(committedValue), pctC+'% of target','commits'],
+        ['Investors', Object.keys(investors).length, 'have committed','investors'],
+        ['Shares reserved', committedShares.toLocaleString('en-GB'), 'of '+deals.reduce(function(a,d){return a+(d.sharesTotal||0);},0).toLocaleString('en-GB'),'commits'],
+        ['Amco co-invest', gbpm(amco), '25% alongside','deals'],
+        ['Open questions', unanswered, 'awaiting reply','questions'],
+        ['Avg share price', deals.length?gbp(Math.round(deals.reduce(function(a,d){return a+(d.sharePrice||0);},0)/deals.length)):'£0', 'per deal','deals']
       ];
-      $('#ov-metrics').innerHTML=m.map(function(x){return '<div class="card m" style="padding:13px"><div class="k">'+x[0]+'</div><div class="v">'+x[1]+'</div><div class="s">'+x[2]+'</div></div>';}).join('');
+      $('#ov-metrics').innerHTML=m.map(function(x){return '<div class="card m mtile" data-key="'+x[3]+'" style="padding:13px;cursor:pointer"><div class="k">'+x[0]+'</div><div class="v">'+x[1]+'</div><div class="s">'+x[2]+' →</div></div>';}).join('');
+      function dealTitle(id){ var dd=deals.filter(function(x){return x.id===id;})[0]; return dd?dd.title:'(deal)'; }
+      function drill(key){
+        var box=$('#ov-drill'), h='';
+        if(key==='deals'){ h='<div class="card"><h2>Live deals</h2>'+(deals.length?deals.map(function(d){ var ds=0; commits.forEach(function(c){if(c.deal_id===d.id)ds+=parseInt(c.shares)||0;}); var pc=d.sharesTotal?Math.round(ds/d.sharesTotal*100):0; return '<div class="ovd" data-id="'+escr(d.id)+'" style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--rule);cursor:pointer"><div><b style="font-size:13px">'+escr(d.title)+'</b><div style="font-size:11px;color:var(--muted)">'+gbp(d.sharePrice||0)+'/share · '+ds+'/'+(d.sharesTotal||0)+' shares ('+pc+'%)</div></div><span style="color:var(--clay);font-size:12px;font-weight:700">Open →</span></div>'; }).join('') : '<div style="color:var(--muted);font-size:13px">No live deals.</div>')+'</div>'; }
+        else if(key==='commits'){ h='<div class="card"><h2>All commitments</h2>'+(commits.length?commits.map(function(c){ return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12.5px"><div><b>'+escr(c.name||'Investor')+'</b> <span style="color:var(--muted)">'+escr(dealTitle(c.deal_id))+'</span></div><div style="font-weight:700">'+(parseInt(c.shares)||0)+' shares · '+gbp((parseInt(c.shares)||0)*(priceById[c.deal_id]||0))+'</div></div>'; }).join('') : '<div style="color:var(--muted);font-size:13px">No commitments yet.</div>')+'</div>'; }
+        else if(key==='investors'){ var byInv={}; commits.forEach(function(c){ var who=(c.email||c.name||'').toLowerCase(); if(!who)return; if(!byInv[who]) byInv[who]={name:c.name||c.email,shares:0,val:0}; byInv[who].shares+=parseInt(c.shares)||0; byInv[who].val+=(parseInt(c.shares)||0)*(priceById[c.deal_id]||0); }); var arr=Object.keys(byInv).map(function(k){return byInv[k];}); h='<div class="card"><h2>Investors</h2>'+(arr.length?arr.map(function(x){ return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12.5px"><b>'+escr(x.name)+'</b><div style="font-weight:700">'+x.shares+' shares · '+gbp(x.val)+'</div></div>'; }).join('') : '<div style="color:var(--muted);font-size:13px">No investors yet.</div>')+'</div>'; }
+        else if(key==='questions'){ var un=qs.filter(function(q){return !q.answer && priceById[q.deal_id]!==undefined;}); h='<div class="card"><h2>Open questions</h2>'+(un.length?un.map(function(q){ return '<div class="ovd" data-id="'+escr(q.deal_id)+'" style="padding:8px 0;border-bottom:1px solid var(--rule);font-size:12.5px;cursor:pointer"><div style="color:var(--muted);font-size:11px">'+escr(dealTitle(q.deal_id))+' · '+escr(q.name||'Investor')+'</div><div>'+escr(q.body)+'</div></div>'; }).join('') : '<div style="color:var(--muted);font-size:13px">No open questions.</div>')+'</div>'; }
+        box.innerHTML=h;
+        box.querySelectorAll('.ovd').forEach(function(el){ el.onclick=function(){ var dd=deals.filter(function(x){return x.id===el.dataset.id;})[0]; if(dd) openPubDeal(dd); }; });
+        box.scrollIntoView({block:'nearest'});
+      }
+      $('#ov-metrics').querySelectorAll('.mtile').forEach(function(t){ t.onclick=function(){ drill(t.dataset.key); }; });
 
       $('#ov-raising').innerHTML = deals.length ? deals.map(function(d){
         var dShares=0; commits.forEach(function(c){ if(c.deal_id===d.id) dShares+=parseInt(c.shares)||0; });
@@ -487,28 +501,65 @@
   }
   function getSeenCommits(){ try{return JSON.parse(window.localStorage.getItem('amco_seen_commits')||'{}');}catch(e){return {};} }
   function setSeenCommit(id,count){ var s=getSeenCommits(); s[id]=count; try{window.localStorage.setItem('amco_seen_commits',JSON.stringify(s));}catch(e){} }
+  function renderCommitBar(panel, rows, d){
+    rows=rows||[];
+    var total=d.sharesTotal||0;
+    var committed=rows.reduce(function(a,r){return a+(parseInt(r.shares)||0);},0);
+    var remaining=Math.max(0,total-committed);
+    var pctv=total? Math.round(committed/total*100):0;
+    panel.innerHTML='<div style="display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap">'+
+      '<div style="text-align:center"><div style="position:relative;width:66px;height:170px;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:#F1F0EE">'+
+        '<div class="commit-fill" style="position:absolute;left:0;right:0;bottom:0;height:'+pctv+'%;min-height:'+(committed>0?'6px':'0')+';background:var(--clay);cursor:pointer" title="Click for investor breakdown"></div>'+
+      '</div><div style="font-size:11px;color:var(--muted);margin-top:6px">'+pctv+'% committed</div></div>'+
+      '<div style="font-size:13px;line-height:1.9">'+
+        '<div><span style="color:var(--clay)">■</span> Committed: <b>'+committed+'</b> shares · '+gbp(committed*(d.sharePrice||0))+'</div>'+
+        '<div><span style="color:#C9CCC6">■</span> Remaining: <b>'+remaining+'</b> shares · '+gbp(remaining*(d.sharePrice||0))+'</div>'+
+        '<div style="color:var(--muted);margin-top:4px;font-size:12px">'+rows.length+' investor'+(rows.length===1?'':'s')+' · tap the red bar for the breakdown</div>'+
+      '</div>'+
+    '</div>'+
+    '<div id="commit-breakdown" style="display:none;margin-top:14px"></div>';
+    var fill=panel.querySelector('.commit-fill'), bd=panel.querySelector('#commit-breakdown');
+    if(fill) fill.onclick=function(){ if(bd.style.display==='none'){ renderCommits(bd,rows,d); bd.style.display='block'; } else { bd.style.display='none'; } };
+  }
+  function renderUpdates(panel, d){
+    var ups=(d.updates||[]).slice().reverse();
+    panel.innerHTML = ups.length
+      ? '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;margin-bottom:6px">Update history</div>'+ups.map(function(u){ var sm=stageMeta(u.stage); var dt=new Date(u.at); return '<div style="border-bottom:1px solid var(--rule);padding:8px 0"><div style="font-size:11px;color:var(--clay);font-weight:700">'+sm.label+' · '+dt.toLocaleDateString('en-GB')+'</div><div style="font-size:12.5px;margin-top:2px">'+escr(u.text)+'</div></div>'; }).join('')
+      : '<div style="font-size:12px;color:var(--muted)">No updates posted yet.</div>';
+  }
   function openPubDeal(d){
     if(!d) return;
     var closeAt=d.closeAt||(Date.now()+((d.closesDays||14)*86400000));
     var kv=function(arr){ return (arr||[]).map(function(r){return '<div class="kv"><span>'+escr(r[0])+'</span><b>'+escr(r[1])+'</b></div>';}).join(''); };
-    var p=d.per||{};
-    var figs=[['Share price',gbp(d.sharePrice||0)],['Total shares',d.sharesTotal||'—'],['Min per investor',(d.minShares||1)+' share'+((d.minShares||1)>1?'s':'')],['Day-one yield',d.dayYield||'—'],['After-refi yield',d.refiYield||'—'],['Capital back',d.capBack||'—'],['Status',d.archived?'Archived':'Live']];
+    var p=d.per||{}; var st=stageMeta(d.stage||'funding');
+    var figs=[['Share price',gbp(d.sharePrice||0)],['Total shares',d.sharesTotal||'—'],['Min per investor',(d.minShares||1)+' share'+((d.minShares||1)>1?'s':'')],['Day-one yield',d.dayYield||'—'],['After-refi yield',d.refiYield||'—'],['Capital back',d.capBack||'—'],['Stage',st.label]];
     var perRows=[['Cash back at refinance',gbp(p.cashout||0)],['Money left in',gbp(p.leftIn||0)],['Income day one',gbp(p.day||0)+' / yr'],['Income after refi',gbp(p.refi||0)+' / yr']];
     var actions = d.archived
       ? '<button class="btn btn-ghost" id="pd2-restore" style="font-size:12.5px">Restore</button><button class="btn" id="pd2-delete" style="font-size:12.5px;background:var(--danger);border-color:var(--danger)">Delete permanently</button>'
-      : '<button class="btn btn-ghost" id="pd2-archive" style="font-size:12.5px">Archive</button>';
+      : '<button class="btn" id="pd2-edit" style="font-size:12.5px">Edit deal</button><button class="btn btn-ghost" id="pd2-archive" style="font-size:12.5px">Archive</button>';
+    var stepper='<div style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 14px">'+STAGES.map(function(s,i){ var done=i<=st.idx; return '<div title="'+s[2]+'" style="flex:1 1 auto;min-width:64px;text-align:center;padding:7px 5px;border-radius:8px;font-size:10px;font-weight:700;'+(done?'background:var(--clay);color:#fff':'background:#F1F0EE;color:var(--muted)')+'">'+s[1]+'</div>'; }).join('')+'</div>';
+    var stageOpts=STAGES.map(function(s){ return '<option value="'+s[0]+'"'+(s[0]===st.key?' selected':'')+'>'+s[1]+'</option>'; }).join('');
     var html='<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+
       '<div class="dswatch" style="width:48px;height:48px;flex:0 0 48px;background:'+(d.grad||'linear-gradient(135deg,#3F7A5C,#2C5D6B)')+'"></div>'+
       '<div style="flex:1"><h1 class="disp" style="font-size:24px;margin:0">'+escr(d.title||'(untitled)')+'</h1><div style="font-size:12.5px;color:var(--muted)">'+escr(d.tag||'')+(d.desc?' · '+escr(d.desc):'')+'</div></div>'+
       '<span class="risk '+(d.risk||'low')+'">'+capr(d.risk)+'</span></div>'+
-      '<div class="closes admin-cd" data-dl="'+closeAt+'" style="font-weight:700;font-size:13px;margin-bottom:14px"><span class="cd"></span></div>'+
+      '<div style="font-size:11.5px;color:var(--muted);margin-bottom:2px">Time left to invest / close</div>'+
+      '<div class="closes admin-cd" data-dl="'+closeAt+'" style="font-weight:700;font-size:14px;margin-bottom:14px"><span class="cd"></span></div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">'+actions+'</div>'+
-      '<div class="grid2">'+
+      '<div class="card"><h2>Progress &amp; investor updates</h2>'+
+        '<div style="font-size:12px;color:var(--muted)">Current stage: <b style="color:var(--ink)">'+st.label+'</b> — '+escr(st.desc)+'</div>'+stepper+
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><span style="font-size:12.5px;font-weight:600">Move to stage:</span><select id="pd2-stage" style="border:1px solid var(--rule);border-radius:8px;padding:7px 9px;font-size:12.5px">'+stageOpts+'</select></div>'+
+        '<textarea id="pd2-update" placeholder="Write an update investors will see (e.g. &quot;Works have started on site&quot;)…" style="width:100%;border:1px solid var(--rule);border-radius:10px;padding:10px;font-family:inherit;font-size:13px;min-height:60px;outline:none;resize:vertical"></textarea>'+
+        '<button class="btn" id="pd2-postupdate" style="margin-top:8px;font-size:12.5px">Post update &amp; notify investors</button>'+
+        '<span id="pd2-updatedone" style="display:none;color:var(--sage);font-size:12px;font-weight:600;margin-left:10px"></span>'+
+        '<div id="pd2-updates" style="margin-top:14px"></div>'+
+      '</div>'+
+      '<div class="grid2" style="margin-top:16px">'+
         '<div class="card"><h2>Key figures</h2>'+kv(figs)+'</div>'+
         '<div class="card"><h2>The deal, in full</h2>'+kv(d.breakdown)+'</div>'+
       '</div>'+
       '<div class="grid2" style="margin-top:16px">'+
-        '<div class="card"><h2>Property details</h2>'+((d.details&&d.details.length)?kv(d.details):'<div style="color:var(--muted);font-size:13px">None provided.</div>')+'</div>'+
+        '<div class="card"><h2>Property details</h2>'+((d.details&&d.details.length)?kv(d.details):'<div style="color:var(--muted);font-size:13px">None entered. Use <b>Edit deal</b> → Property breakdown to add bedrooms, floor area, etc.</div>')+'</div>'+
         '<div class="card"><h2>Per share</h2>'+kv(perRows)+'</div>'+
       '</div>'+
       '<div class="card" style="margin-top:16px"><h2>Committed investors</h2><div id="pd2-commits"><div style="font-size:12px;color:var(--muted)">Loading…</div></div></div>'+
@@ -518,8 +569,17 @@
     $('#pd2-content').innerHTML=html;
     $('#pd2-crumb').textContent=d.title||'Deal';
     go('pubdeal'); updateAdminCountdowns();
-    Promise.resolve(DB.commitments(d.id)).then(function(rows){ renderCommits($('#pd2-commits'),rows,d); setSeenCommit(d.id,(rows||[]).length); refreshQADot(); });
+    renderUpdates($('#pd2-updates'), d);
+    Promise.resolve(DB.commitments(d.id)).then(function(rows){ renderCommitBar($('#pd2-commits'),rows,d); setSeenCommit(d.id,(rows||[]).length); refreshQADot(); });
     Promise.resolve(DB.questions(d.id)).then(function(rows){ renderQAadmin($('#pd2-qa'),rows,d); });
+    var ed=$('#pd2-edit'); if(ed) ed.onclick=function(){ populateForm(d); };
+    var pu=$('#pd2-postupdate'); if(pu) pu.onclick=function(){
+      var txt=($('#pd2-update').value||'').trim(), stg=$('#pd2-stage').value;
+      if(!txt && stg===(d.stage||'funding')){ var done=$('#pd2-updatedone'); done.style.display='inline'; done.style.color='var(--muted)'; done.textContent='Write an update or change the stage first.'; return; }
+      d.stage=stg; if(txt){ d.updates=(d.updates||[]); d.updates.push({at:Date.now(), stage:stg, text:txt}); }
+      pu.textContent='Posting…';
+      Promise.resolve(DB.patch(d)).then(function(){ renderDeals(); openPubDeal(d); });
+    };
     var ar=$('#pd2-archive'); if(ar) ar.onclick=function(){ d.archived=true; ar.textContent='…'; Promise.resolve(DB.patch(d)).then(function(){ refreshQADot(); renderDeals(); go('deals'); }); };
     var rs=$('#pd2-restore'); if(rs) rs.onclick=function(){ d.archived=false; rs.textContent='…'; Promise.resolve(DB.patch(d)).then(function(){ renderDeals(); go('deals'); }); };
     var dl=$('#pd2-delete'); if(dl) dl.onclick=function(){ if(window.confirm('Permanently delete \u201c'+(d.title||'this deal')+'\u201d? This cannot be undone.')){ dl.textContent='…'; Promise.resolve(DB.remove(d.id)).then(function(){ renderDeals(); go('deals'); }); } };
@@ -532,20 +592,19 @@
       var unq={}; qs.forEach(function(q){ if(!q.answer){ unq[q.deal_id]=(unq[q.deal_id]||0)+1; } });
       var cmap={}; cs.forEach(function(c){ cmap[c.deal_id]=(cmap[c.deal_id]||0)+1; });
       var seenC=getSeenCommits();
-      var active=list.filter(function(d){return d&&!d.archived;});
+      var live=list.filter(function(d){return d&&!d.archived&&d.stage!=='sold';});
+      var completed=list.filter(function(d){return d&&!d.archived&&d.stage==='sold';});
       var arch=list.filter(function(d){return d&&d.archived;});
       function nc(d){ return Math.max(0,(cmap[d.id]||0)-(seenC[d.id]||0)); }
-      var html='<h2 style="margin:0 0 6px">Your published deals</h2>';
-      html += active.length ? active.map(function(d){return pubRow(d,false,unq[d.id]||0,nc(d));}).join('')
-                            : '<div style="color:var(--muted);font-size:13px;padding:8px 0 12px">No deals published yet. Build one in <b>New investment</b> and hit Publish — it\u2019ll appear here and on the investor site.</div>';
-      if(arch.length){ html+='<h2 style="margin:20px 0 6px">Archived</h2>'+arch.map(function(d){return pubRow(d,true,unq[d.id]||0,nc(d));}).join(''); }
+      var html='<h2 style="margin:0 0 6px">Live deals</h2>';
+      html += live.length ? live.map(function(d){return pubRow(d,false,unq[d.id]||0,nc(d));}).join('')
+                          : '<div style="color:var(--muted);font-size:13px;padding:8px 0 12px">No live deals yet. Build one in <b>New investment</b> and hit Publish — it\u2019ll appear here and on the investor site.</div>';
+      if(completed.length){ html+='<h2 style="margin:22px 0 6px">Completed</h2>'+completed.map(function(d){return pubRow(d,false,unq[d.id]||0,nc(d));}).join(''); }
+      if(arch.length){ html+='<h2 style="margin:22px 0 6px">Archived</h2>'+arch.map(function(d){return pubRow(d,true,unq[d.id]||0,nc(d));}).join(''); }
       el.innerHTML=html;
-      var all=active.concat(arch);
+      var all=live.concat(completed).concat(arch);
       bindDealActions(all);
       updateAdminCountdowns();
-      if(openQA){ var dd=null; all.forEach(function(x){if(x.id===openQA)dd=x;}); var qp=root.querySelector('#qp-'+openQA);
-        if(qp&&dd){ qp.style.display='block'; qp.innerHTML='<div style="font-size:12px;color:var(--muted)">Loading…</div>';
-          Promise.resolve(DB.questions(openQA)).then(function(rows){ renderQAadmin(qp,rows,dd); }); } }
     });
   }
   function capr(s){ return (s||'').charAt(0).toUpperCase()+(s||'').slice(1); }
@@ -667,6 +726,9 @@
   var gbp2=function(v){return '£'+v.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});};
   var pct=function(v){return (v*100).toFixed(1)+'%';};
   var bRisk='low';
+  var EDIT_ID=null, EDIT_DEAL=null;
+  var STAGES=[['funding','Funding','Raising capital from investors'],['funded','Funded','Fully committed — raise closed'],['purchased','Purchased','Property bought'],['refurb','Refurbishing','Works underway'],['refinanced','Refinanced','Capital returned to investors'],['let','Let & earning','Stabilised and producing income'],['sold','Sold — completed','Exited; final returns paid']];
+  function stageMeta(key){ for(var i=0;i<STAGES.length;i++){ if(STAGES[i][0]===key) return {idx:i,key:STAGES[i][0],label:STAGES[i][1],desc:STAGES[i][2]}; } return {idx:0,key:'funding',label:'Funding',desc:STAGES[0][2]}; }
   var dd=new Date(Date.now()+9*86400000); $('#f-close').value=dd.toISOString().slice(0,10);
   function sdltFor(price, residential){
     if(!price||price<=0) return 0;
@@ -745,8 +807,16 @@
       : risk==='medium'
       ? ['• Medium-risk: a '+catLabel.toLowerCase()+' with a clear plan.','• The income uplift relies on the works completing.','• Capital is committed until refinance and beyond.']
       : ['• Lower-risk: a straightforward '+catLabel.toLowerCase()+'.','• Tenanted and earning from day one.','• Still property — values can fall as well as rise.'];
+    var cd={}; $('#cat-detail').querySelectorAll('input,select').forEach(function(el){ if(el.id) cd[el.id]=el.value; });
+    var raw={ name:$('#f-name').value, desc:$('#f-desc').value, type:typeV, cat:$('#f-cat').value, price:n('f-price'), legals:n('f-legals'), works:n('f-works'), value:n('f-value'), ltv:n('f-ltv'), rate:n('f-rate'), loanFee:n('f-loanfee'), cur:n('f-cur'), curU:$('#f-cur-u').value, aft:n('f-aft'), aftU:$('#f-aft-u').value, mgmt:n('f-mgmt'), vat:$('#f-vat').value, ins:n('f-ins'), plat:n('f-plat'), shares:n('f-shares'), minShares:n('f-minshares'), coinv:n('f-coinv'), loanmo:n('f-loanmo'), close:$('#f-close').value, risk:bRisk, cd:cd, units:(UNITS||[]).slice() };
     return {
-      id:'pub_'+Date.now(), publishedAt:Date.now(), title:($('#f-name').value||'Untitled deal').trim(), desc:($('#f-desc').value||'').trim(),
+      id: EDIT_ID || ('pub_'+Date.now()),
+      publishedAt: (EDIT_DEAL && EDIT_DEAL.publishedAt) || Date.now(),
+      updatedAt: EDIT_DEAL ? Date.now() : null,
+      stage: (EDIT_DEAL && EDIT_DEAL.stage) || 'funding',
+      updates: (EDIT_DEAL && EDIT_DEAL.updates) || [],
+      raw: raw,
+      title:($('#f-name').value||'Untitled deal').trim(), desc:($('#f-desc').value||'').trim(),
       loc:catLabel+' · '+typeLabel, tag:typeLabel+' · '+catLabel, type:typeV, risk:risk, riskN:riskN,
       closesDays:closesDays, closeAt:closeAt, fundingPct:0, sharesLeft:shares, sharesTotal:shares, sharePrice:sharePrice, minShares:Math.max(1, n('f-minshares')||1),
       dayYield:pctS(dayYield), refiYield:pctS(refiYield), capBack:Math.round(capBack*100)+'%', grad:grad,
@@ -759,7 +829,29 @@
       details: propDetails()
     };
   }
+  function populateForm(d){
+    var r=d.raw;
+    EDIT_ID=d.id; EDIT_DEAL=d;
+    $('#publish').textContent='Save changes';
+    var banner=$('#edit-banner'); if(banner){ banner.style.display='block'; banner.textContent='Editing: '+(d.title||'deal')+' — change anything and Save.'; }
+    if(!r){ // older deal without raw inputs — prefill what we can
+      $('#f-name').value=d.title||''; $('#f-desc').value=d.desc||''; recompute(); validate(); return;
+    }
+    $('#f-name').value=r.name||''; $('#f-desc').value=r.desc||'';
+    $('#f-type').value=r.type||'residential'; populateCats(r.type||'residential');
+    if(r.cat){ $('#f-cat').value=r.cat; renderCatDetail(r.cat); }
+    if(r.units && r.units.length && (r.cat==='apartments'||r.cat==='converted')){ UNITS=r.units.slice(); var ap=$('#cd-apts'); if(ap) ap.value=UNITS.length; if(typeof renderUnits==='function') renderUnits(); }
+    if(r.cd){ Object.keys(r.cd).forEach(function(id){ var el=$('#'+id); if(el) el.value=r.cd[id]; }); }
+    [['f-price',r.price],['f-legals',r.legals],['f-works',r.works],['f-value',r.value],['f-ltv',r.ltv],['f-rate',r.rate],['f-loanfee',r.loanFee],['f-cur',r.cur],['f-aft',r.aft],['f-mgmt',r.mgmt],['f-ins',r.ins],['f-plat',r.plat],['f-shares',r.shares],['f-minshares',r.minShares],['f-coinv',r.coinv],['f-loanmo',r.loanmo]].forEach(function(p){ var el=$('#'+p[0]); if(el && p[1]!=null && p[1]!=='') el.value=p[1]; });
+    if(r.curU){ $('#f-cur-u').value=r.curU; } if(r.aftU){ $('#f-aft-u').value=r.aftU; } if(r.vat){ $('#f-vat').value=r.vat; }
+    if(r.close){ $('#f-close').value=r.close; }
+    bRisk=r.risk||'low'; $('#f-risk').querySelectorAll('.rb').forEach(function(x){x.classList.toggle('sel', x.dataset.r===bRisk);});
+    recompute(); validate();
+    go('new');
+  }
   function clearForm(){
+    EDIT_ID=null; EDIT_DEAL=null; $('#publish').textContent='Publish investment';
+    var banner=$('#edit-banner'); if(banner) banner.style.display='none';
     ['f-name','f-desc','f-price','f-legals','f-works','f-value','f-cur','f-aft','f-ins','f-shares','f-minshares','f-sdlt','f-plat'].forEach(function(id){ var el=$('#'+id); if(el) el.value=''; });
     $('#f-ltv').value='70'; $('#f-rate').value='5.5'; $('#f-loanfee').value='2'; $('#f-mgmt').value='10'; $('#f-coinv').value='25'; $('#f-loanmo').value='10';
     $('#f-type').value='residential'; $('#f-vat').value='1'; $('#f-cur-u').value='12'; $('#f-aft-u').value='12';
@@ -770,13 +862,14 @@
   }
   $('#publish').onclick=function(){
     if($('#publish').disabled) return;
-    var btn=this; btn.textContent='Publishing…';
-    Promise.resolve(DB.add(buildDealObject())).then(function(ok){
+    var btn=this; var editing=!!EDIT_ID; btn.textContent=editing?'Saving…':'Publishing…';
+    var obj=buildDealObject();
+    Promise.resolve(editing?DB.patch(obj):DB.add(obj)).then(function(ok){
       var d=$('#pub-done'); d.style.display='block';
-      if(DB.on && ok){ d.style.color='var(--sage)'; d.textContent='✓ Published to the live investor site — investors will see it next time the app loads.'; clearForm(); }
+      if(DB.on && ok){ d.style.color='var(--sage)'; d.textContent=editing?'✓ Changes saved to the live deal. Investors will see the update.':'✓ Published to the live investor site — investors will see it next time the app loads.'; clearForm(); renderDeals(); }
       else if(DB.on && !ok){ d.style.color='var(--danger)'; d.textContent='⚠ Couldn\u2019t save to the shared database — saved in this browser only. Check the Supabase keys and table permissions.'; }
-      else { d.style.color='var(--sage)'; d.textContent='✓ Saved in this browser. Add your Supabase keys (DEPLOY.md) to share across devices.'; clearForm(); }
-      btn.textContent='Publish investment';
+      else { d.style.color='var(--sage)'; d.textContent=editing?'✓ Changes saved in this browser.':'✓ Saved in this browser. Add your Supabase keys (DEPLOY.md) to share across devices.'; clearForm(); renderDeals(); }
+      btn.textContent = EDIT_ID ? 'Save changes' : 'Publish investment';
     });
   };
   var px=$('#proto-x'); if(px) px.onclick=function(){ $('#proto-banner').style.display='none'; };

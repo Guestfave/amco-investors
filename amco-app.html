@@ -106,6 +106,7 @@
   #amco-app #inv-dot{ display:none; margin-left:5px; width:8px; height:8px; border-radius:99px; background:var(--clay); vertical-align:middle; }
   #amco-app #pf-dot{ display:none; margin-left:5px; width:8px; height:8px; border-radius:99px; background:var(--clay); vertical-align:middle; }
   #amco-app .replybadge{ display:inline-block; background:var(--sage); color:#fff; font-size:9.5px; font-weight:800; letter-spacing:0.04em; padding:2px 7px; border-radius:999px; vertical-align:middle; margin-left:6px; }
+  #amco-app .updatebadge{ display:inline-block; background:var(--clay); color:#fff; font-size:9.5px; font-weight:800; letter-spacing:0.04em; padding:2px 7px; border-radius:999px; vertical-align:middle; margin-left:6px; animation:newpulse 1.5s ease-in-out infinite; }
   #amco-app .lcard .thumb{ position:relative; }
   #amco-app .newbadge{ position:absolute; top:10px; right:10px; background:var(--clay); color:#fff; font-size:10px; font-weight:800; letter-spacing:0.06em; padding:3px 9px; border-radius:999px; box-shadow:0 2px 8px rgba(237,29,36,0.45); animation:newpulse 1.5s ease-in-out infinite; }
   @keyframes newpulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.09); } }
@@ -444,6 +445,8 @@
       </div>
     </div>
 
+    <div class="card" id="d-progress-card" style="margin-bottom:16px;display:none"><h2>Deal progress</h2><div id="d-stages" style="display:flex;gap:4px;flex-wrap:wrap;margin:8px 0 14px"></div><div id="d-updates"></div></div>
+
     <div class="card" id="d-details-card" style="margin-bottom:16px;display:none"><h2>Property details</h2><div id="d-details"></div></div>
 
     <div class="grid2" style="margin-bottom:16px">
@@ -583,6 +586,19 @@
 <!-- SIMPLE STUBS -->
 <div class="page" id="page-completed"><div class="wrap" style="padding-top:40px"><div class="card" style="text-align:center;padding:40px"><div class="eyebrow" style="color:var(--clay)">Completed</div><h1 class="disp" style="font-size:24px;margin:10px 0 6px">Filled investments</h1><p style="color:var(--muted);font-size:14px;max-width:420px;margin:0 auto">Completed deals, how fast they funded, and a "notify me when a share reopens" option. Coming next.</p><a class="btn" style="margin-top:18px" data-go="investments">Browse investments</a></div></div></div>
 
+<div id="update-pop" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,0.5);z-index:50;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;max-width:380px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="display:inline-block;background:var(--clayBg);color:var(--clay);font-size:10px;font-weight:800;letter-spacing:.06em;padding:4px 10px;border-radius:999px;margin-bottom:10px">DEAL UPDATE</div>
+    <h3 style="font-family:'Space Grotesk',sans-serif;font-size:18px;margin:0 0 6px" id="up-title"></h3>
+    <div id="up-stage" style="font-size:12px;color:var(--clay);font-weight:700;margin-bottom:8px"></div>
+    <p id="up-body" style="font-size:13.5px;color:var(--ink);line-height:1.5;margin:0 0 16px"></p>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="up-view" style="flex:1">View the deal</button>
+      <button class="btn btn-ghost" id="up-dismiss">Later</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var root=document.getElementById('amco-app');
@@ -618,8 +634,37 @@
   function getSeenAns(){ try{return JSON.parse(Store.get(seenAnsKey())||'{}');}catch(e){return {};} }
   function dealHasNewReply(id){ return (ansMap[id]||0) > (getSeenAns()[id]||0); }
   function markDealAnsSeen(id){ var s=getSeenAns(); s[id]=ansMap[id]||0; Store.set(seenAnsKey(), JSON.stringify(s)); }
-  function refreshReplyDot(){ var dot=root.querySelector('#pf-dot'); if(dot) dot.style.display = HOLDINGS.some(function(h){return dealHasNewReply(h.id);}) ? 'inline-block' : 'none'; }
+  function refreshReplyDot(){ var dot=root.querySelector('#pf-dot'); if(dot) dot.style.display = (HOLDINGS.some(function(h){return dealHasNewReply(h.id);}) || heldNewUpdates().length>0) ? 'inline-block' : 'none'; }
   function loadReplies(){ Promise.resolve(DB.allQuestions()).then(function(qs){ ansMap={}; (qs||[]).forEach(function(q){ if(q.answer){ ansMap[q.deal_id]=(ansMap[q.deal_id]||0)+1; } }); renderList(); refreshReplyDot(); }).catch(function(){}); }
+  function refreshDealFunding(d){ var el=root.querySelector('#d-prog'); if(el && current && current.id===d.id){ el.innerHTML=d.fundingPct+'% funded · '+d.sharesLeft+' of '+d.sharesTotal+' shares left<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div>'; } }
+  function applyFunding(){ return Promise.resolve(DB.allCommitments()).then(function(cs){ var m={}; (cs||[]).forEach(function(c){ m[c.deal_id]=(m[c.deal_id]||0)+(parseInt(c.shares)||0); }); DEALS.forEach(function(d){ var total=d.sharesTotal||0, committed=m[d.id]||0; d.committedShares=committed; d.fundingPct=total?Math.min(100,Math.round(committed/total*100)):0; d.sharesLeft=Math.max(0,total-committed); }); renderList(); if(current) refreshDealFunding(current); }).catch(function(){}); }
+  var STAGES_INV=[['funding','Funding'],['funded','Funded'],['purchased','Purchased'],['refurb','Refurbishing'],['refinanced','Refinanced'],['let','Let & earning'],['sold','Completed']];
+  function stageIdx(key){ for(var i=0;i<STAGES_INV.length;i++){ if(STAGES_INV[i][0]===key) return i; } return 0; }
+  function stageLabel(key){ return (STAGES_INV[stageIdx(key)]||['','Funding'])[1]; }
+  function seenUpKey(){ return 'amco_seenup_'+(state.email||'guest'); }
+  function getSeenUp(){ try{return JSON.parse(Store.get(seenUpKey())||'{}');}catch(e){return {};} }
+  function dealUpdateCount(d){ return (d&&d.updates?d.updates.length:0); }
+  function dealHasNewUpdate(id){ var d=byId[id]; if(!d)return false; return dealUpdateCount(d) > (getSeenUp()[id]||0); }
+  function markDealUpSeen(id){ var d=byId[id]; if(!d)return; var s=getSeenUp(); s[id]=dealUpdateCount(d); Store.set(seenUpKey(), JSON.stringify(s)); }
+  function heldNewUpdates(){ return HOLDINGS.filter(function(h){return dealHasNewUpdate(h.id);}).map(function(h){return byId[h.id];}).filter(Boolean); }
+  function renderProgress(d){
+    var card=root.querySelector('#d-progress-card');
+    var ups=(d.updates||[]);
+    if((!d.stage || d.stage==='funding') && ups.length===0){ card.style.display='none'; return; }
+    card.style.display='';
+    var cur=stageIdx(d.stage||'funding');
+    root.querySelector('#d-stages').innerHTML=STAGES_INV.map(function(s,i){ var done=i<=cur; return '<div style="flex:1 1 auto;min-width:62px;text-align:center;padding:6px 5px;border-radius:8px;font-size:10px;font-weight:700;'+(done?'background:var(--clay);color:#fff':'background:#EFEEEC;color:var(--muted)')+'">'+s[1]+'</div>'; }).join('');
+    root.querySelector('#d-updates').innerHTML = ups.length ? ('<div style="font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;margin-bottom:6px">Latest updates</div>'+ups.slice().reverse().map(function(u){ var dt=new Date(u.at); return '<div style="border-bottom:1px solid var(--rule);padding:8px 0"><div style="font-size:11px;color:var(--clay);font-weight:700">'+stageLabel(u.stage)+' · '+dt.toLocaleDateString('en-GB')+'</div><div style="font-size:13px;margin-top:2px">'+escq(u.text)+'</div></div>'; }).join('')) : '<div style="font-size:12.5px;color:var(--muted)">No updates yet.</div>';
+  }
+  function showUpdatePopup(){
+    var list=heldNewUpdates(); if(!list.length) return;
+    var d=list[0]; var ups=d.updates||[]; var last=ups[ups.length-1];
+    var pop=root.querySelector('#update-pop'); if(!pop) return;
+    root.querySelector('#up-title').textContent='Update on '+(d.title||'your investment');
+    root.querySelector('#up-body').textContent = last? last.text : 'There is a new update on a deal you\u2019ve invested in.';
+    root.querySelector('#up-stage').textContent = 'Now at: '+stageLabel(d.stage||'funding');
+    pop.dataset.id=d.id; pop.style.display='flex';
+  }
   function go(name){
     if(!state.loggedIn && name!=='welcome' && name!=='signin'){ name='welcome'; }
     if(name==='portfolio') renderPortfolio();
@@ -646,11 +691,12 @@
     DEALS.forEach(function(d){
       var isNew = isNewDeal(d);
       var hasReply = dealHasNewReply(d.id);
+      var hasUpdate = dealHasNewUpdate(d.id) && HOLDINGS.some(function(h){return h.id===d.id;});
       var el=document.createElement('div'); el.className='lcard';
       el.dataset.type=d.type; el.dataset.risk=d.riskN; el.dataset.yield=parseFloat(d.refiYield); el.dataset.share=d.sharePrice;
       el.innerHTML=
         '<div class="thumb" style="background:'+d.grad+'"><span class="tag">'+d.tag+'</span>'+(isNew?'<span class="newbadge">NEW</span>':'')+'</div>'+
-        '<div class="lbody"><h3>'+d.title+(hasReply?' <span class="replybadge">NEW REPLY</span>':'')+'</h3><div class="loc">'+d.loc+'</div><div class="desc">'+d.desc+'</div>'+
+        '<div class="lbody"><h3>'+d.title+(hasReply?' <span class="replybadge">NEW REPLY</span>':'')+(hasUpdate?' <span class="updatebadge">UPDATE</span>':'')+'</h3><div class="loc">'+d.loc+'</div><div class="desc">'+d.desc+'</div>'+
         '<div class="stats">'+
           '<div class="stat"><div class="k">Share price</div><div class="v">'+f(d.sharePrice)+'</div><div class="s">'+d.sharesTotal+' shares · min 1</div></div>'+
           '<div class="stat"><div class="k">From day one</div><div class="v" style="color:var(--clay)">'+d.dayYield+'</div><div class="s">on full capital</div></div>'+
@@ -713,7 +759,8 @@
     root.querySelector('#d-minnote').textContent='Minimum '+min+' share'+(min>1?'s':'')+' to invest · '+f(min*d.sharePrice)+' minimum';
     updateCountdowns();
     loadQA(d.id);
-    markDealAnsSeen(d.id); refreshReplyDot(); renderList();
+    renderProgress(d);
+    markDealAnsSeen(d.id); markDealUpSeen(d.id); refreshReplyDot(); renderList();
     go('deal');
   }
   function escq(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -856,7 +903,8 @@
   function persistUser(){ if(!state.email)return; var users=loadUsers(); if(users[state.email]){ users[state.email].holdings=HOLDINGS; saveUsers(users); } }
   function addHolding(id,n){ var ex=null; HOLDINGS.forEach(function(h){ if(h.id===id) ex=h; });
     if(ex){ ex.shares+=n; } else { HOLDINGS.push({id:id,shares:n,stage:1,monthsHeld:0}); } persistUser();
-    if(window.DB||DB){ DB.commit({deal_id:id, name:state.name||'Investor', email:state.email||'', shares:n}); } }
+    var d=byId[id]; if(d){ var total=d.sharesTotal||0; d.committedShares=(d.committedShares||0)+n; d.fundingPct=total?Math.min(100,Math.round(d.committedShares/total*100)):0; d.sharesLeft=Math.max(0,total-d.committedShares); renderList(); refreshDealFunding(d); }
+    if(window.DB||DB){ Promise.resolve(DB.commit({deal_id:id, name:state.name||'Investor', email:state.email||'', shares:n})).then(function(){ applyFunding(); }); } }
   function signOut(){ state.loggedIn=false; state.name=''; state.email=''; HOLDINGS=[]; setAuthUI(); Store.del('amco_session'); setAuthMode('login'); go('welcome'); }
   function loadSession(){ var em=Store.get('amco_session'); if(!em)return; var u=loadUsers()[em]; if(u) setUser(u); }
 
@@ -950,17 +998,25 @@
     function ask(q){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions',{method:'POST',headers:hdr(),body:JSON.stringify(q)}).then(function(r){ if(!r.ok) throw 0; return true; }).catch(function(){ q.id='lq_'+Date.now(); var a=localQ(); a.push(q); try{window.localStorage.setItem('amco_questions',JSON.stringify(a));}catch(e){} return false; }); } q.id='lq_'+Date.now(); var a=localQ(); a.push(q); try{window.localStorage.setItem('amco_questions',JSON.stringify(a));}catch(e){} return Promise.resolve(true); }
     function questions(dealId){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions?deal_id=eq.'+encodeURIComponent(dealId)+'&select=*&order=created_at.asc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localQ().filter(function(q){return q.deal_id===dealId;}); }); } return Promise.resolve(localQ().filter(function(q){return q.deal_id===dealId;})); }
     function allQuestions(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions?select=deal_id,answer',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localQ(); }); } return Promise.resolve(localQ()); }
-    return { list:list, commit:commit, ask:ask, questions:questions, allQuestions:allQuestions, on:on };
+    function localC(){ try{return JSON.parse(window.localStorage.getItem('amco_commitments')||'[]');}catch(e){return [];} }
+    function allCommitments(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments?select=deal_id,shares',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localC(); }); } return Promise.resolve(localC()); }
+    return { list:list, commit:commit, ask:ask, questions:questions, allQuestions:allQuestions, allCommitments:allCommitments, on:on };
   })();
 
   renderList(); renderBuilder(); loadSession(); setAuthUI(); setAuthMode('signup');
   root.querySelector('#pf-signout').onclick=signOut;
+  (function(){ var upPop=root.querySelector('#update-pop'); if(!upPop)return;
+    root.querySelector('#up-view').onclick=function(){ var id=upPop.dataset.id; upPop.style.display='none'; if(id){ markDealUpSeen(id); if(byId[id]) openDeal(id); refreshReplyDot(); } };
+    root.querySelector('#up-dismiss').onclick=function(){ var id=upPop.dataset.id; if(id) markDealUpSeen(id); upPop.style.display='none'; refreshReplyDot(); };
+  })();
   go(state.loggedIn ? 'home' : 'welcome');
   Promise.resolve(DB.list()).then(function(deals){
     var added=false;
     (deals||[]).forEach(function(o){ if(!o||!o.id||o.archived||byId[o.id])return; o.deadline=o.closeAt||(NOW+((o.closesDays||14)*86400000)); DEALS.push(o); byId[o.id]=o; if(o.stmt) STMT[o.id]=o.stmt; added=true; });
     if(added){ renderList(); updateCountdowns(); if(root.querySelector('#page-investments') && root.querySelector('#page-investments').classList.contains('show')){ markDealsSeen(); } else { updateDealsDot(); } }
     loadReplies();
+    applyFunding();
+    setTimeout(showUpdatePopup, 400);
   }).catch(function(){});
   updateCountdowns(); setInterval(updateCountdowns, 1000);
 })();
