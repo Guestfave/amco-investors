@@ -350,7 +350,7 @@
     function remove(id){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE+'?deal_id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:hdr()}).then(function(r){return r.ok;}).catch(function(){localRemove(id);return false;}); } localRemove(id); return Promise.resolve(true); }
     function localCommitments(dealId){ try{return JSON.parse(window.localStorage.getItem('amco_commitments')||'[]').filter(function(c){return c.deal_id===dealId;});}catch(e){return [];} }
     function commitments(dealId){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments?deal_id=eq.'+encodeURIComponent(dealId)+'&select=*&order=created_at.desc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localCommitments(dealId); }); } return Promise.resolve(localCommitments(dealId)); }
-    function allCommitments(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments?select=deal_id',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ try{return JSON.parse(window.localStorage.getItem('amco_commitments')||'[]');}catch(e){return [];} }); } try{ return Promise.resolve(JSON.parse(window.localStorage.getItem('amco_commitments')||'[]')); }catch(e){ return Promise.resolve([]); } }
+    function allCommitments(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments?select=deal_id,shares,name,email',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ try{return JSON.parse(window.localStorage.getItem('amco_commitments')||'[]');}catch(e){return [];} }); } try{ return Promise.resolve(JSON.parse(window.localStorage.getItem('amco_commitments')||'[]')); }catch(e){ return Promise.resolve([]); } }
     function localQ(){ try{return JSON.parse(window.localStorage.getItem('amco_questions')||'[]');}catch(e){return [];} }
     function localAnswer(id,ans){ try{var a=localQ(); for(var i=0;i<a.length;i++){if(String(a[i].id)===String(id))a[i].answer=ans;} window.localStorage.setItem('amco_questions',JSON.stringify(a));}catch(e){} return true; }
     function questions(dealId){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions?deal_id=eq.'+encodeURIComponent(dealId)+'&select=*&order=created_at.asc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localQ().filter(function(q){return q.deal_id===dealId;}); }); } return Promise.resolve(localQ().filter(function(q){return q.deal_id===dealId;})); }
@@ -406,7 +406,7 @@
         ['Raise target', gbpm(raiseTarget), 'across live deals','deals'],
         ['Committed', gbpm(committedValue), pctC+'% of target','commits'],
         ['Investors', Object.keys(investors).length, 'have committed','investors'],
-        ['Shares reserved', committedShares.toLocaleString('en-GB'), 'of '+deals.reduce(function(a,d){return a+(d.sharesTotal||0);},0).toLocaleString('en-GB'),'commits'],
+        ['Shares reserved', committedShares.toLocaleString('en-GB'), 'of '+deals.reduce(function(a,d){return a+(d.sharesTotal||0);},0).toLocaleString('en-GB'),'shares'],
         ['Amco co-invest', gbpm(amco), '25% alongside','deals'],
         ['Open questions', unanswered, 'awaiting reply','questions'],
         ['Avg share price', deals.length?gbp(Math.round(deals.reduce(function(a,d){return a+(d.sharePrice||0);},0)/deals.length)):'£0', 'per deal','deals']
@@ -417,6 +417,23 @@
         var box=$('#ov-drill'), h='';
         if(key==='deals'){ h='<div class="card"><h2>Live deals</h2>'+(deals.length?deals.map(function(d){ var ds=0; commits.forEach(function(c){if(c.deal_id===d.id)ds+=parseInt(c.shares)||0;}); var pc=d.sharesTotal?Math.round(ds/d.sharesTotal*100):0; return '<div class="ovd" data-id="'+escr(d.id)+'" style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--rule);cursor:pointer"><div><b style="font-size:13px">'+escr(d.title)+'</b><div style="font-size:11px;color:var(--muted)">'+gbp(d.sharePrice||0)+'/share · '+ds+'/'+(d.sharesTotal||0)+' shares ('+pc+'%)</div></div><span style="color:var(--clay);font-size:12px;font-weight:700">Open →</span></div>'; }).join('') : '<div style="color:var(--muted);font-size:13px">No live deals.</div>')+'</div>'; }
         else if(key==='commits'){ h='<div class="card"><h2>All commitments</h2>'+(commits.length?commits.map(function(c){ return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12.5px"><div><b>'+escr(c.name||'Investor')+'</b> <span style="color:var(--muted)">'+escr(dealTitle(c.deal_id))+'</span></div><div style="font-weight:700">'+(parseInt(c.shares)||0)+' shares · '+gbp((parseInt(c.shares)||0)*(priceById[c.deal_id]||0))+'</div></div>'; }).join('') : '<div style="color:var(--muted);font-size:13px">No commitments yet.</div>')+'</div>'; }
+        else if(key==='shares'){
+          var invMap={}; commits.forEach(function(c){ if(priceById[c.deal_id]===undefined) return; var who=((c.email||c.name||'')+'').toLowerCase()||'(anon)'; if(!invMap[who]) invMap[who]={name:c.name||c.email||'Investor', deals:{}, total:0, val:0}; var sh=parseInt(c.shares)||0; invMap[who].deals[c.deal_id]=(invMap[who].deals[c.deal_id]||0)+sh; invMap[who].total+=sh; invMap[who].val+=sh*(priceById[c.deal_id]||0); });
+          var invs=Object.keys(invMap).sort(function(a,b){return invMap[b].total-invMap[a].total;});
+          var dealTot={}, grand=0; deals.forEach(function(d){ dealTot[d.id]=0; }); invs.forEach(function(w){ Object.keys(invMap[w].deals).forEach(function(did){ dealTot[did]=(dealTot[did]||0)+invMap[w].deals[did]; grand+=invMap[w].deals[did]; }); });
+          var hc='font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;padding:8px 8px;border-bottom:1px solid var(--rule);white-space:nowrap';
+          var bc='font-size:12.5px;padding:9px 8px;border-bottom:1px solid var(--rule)';
+          var grid='grid-template-columns:1.5fr '+deals.map(function(){return 'minmax(80px,1fr)';}).join(' ')+' 0.9fr;';
+          h='<div class="card"><h2>Shares reserved — investors × properties</h2>';
+          if(!invs.length){ h+='<div style="color:var(--muted);font-size:13px">No shares reserved yet.</div></div>'; }
+          else{
+            h+='<div style="overflow-x:auto"><div style="display:grid;'+grid+'min-width:'+(200+deals.length*110+90)+'px">';
+            h+='<div style="'+hc+'">Investor</div>'+deals.map(function(d){return '<div style="'+hc+';text-align:right">'+escr(d.title||'')+'</div>';}).join('')+'<div style="'+hc+';text-align:right">Total</div>';
+            invs.forEach(function(w){ var iv=invMap[w]; h+='<div style="'+bc+'"><b>'+escr(iv.name)+'</b><div style="font-size:10.5px;color:var(--muted)">'+gbp(iv.val)+'</div></div>'+deals.map(function(d){ var s=iv.deals[d.id]||0; return '<div style="'+bc+';text-align:right;'+(s?'':'color:var(--muted)')+'">'+(s||'·')+'</div>'; }).join('')+'<div style="'+bc+';text-align:right;font-weight:800">'+iv.total+'</div>'; });
+            h+='<div style="'+bc+';border-top:2px solid var(--ink)"><b>All investors</b></div>'+deals.map(function(d){ return '<div style="'+bc+';text-align:right;border-top:2px solid var(--ink);font-weight:800">'+(dealTot[d.id]||0)+'</div>'; }).join('')+'<div style="'+bc+';text-align:right;border-top:2px solid var(--ink);font-weight:800">'+grand+'</div>';
+            h+='</div></div><div style="font-size:11.5px;color:var(--muted);margin-top:8px">Each cell is the shares that investor holds in that property. Anyone holding shares across several deals shows once, spread across the columns.</div></div>';
+          }
+        }
         else if(key==='investors'){ var byInv={}; commits.forEach(function(c){ var who=(c.email||c.name||'').toLowerCase(); if(!who)return; if(!byInv[who]) byInv[who]={name:c.name||c.email,shares:0,val:0}; byInv[who].shares+=parseInt(c.shares)||0; byInv[who].val+=(parseInt(c.shares)||0)*(priceById[c.deal_id]||0); }); var arr=Object.keys(byInv).map(function(k){return byInv[k];}); h='<div class="card"><h2>Investors</h2>'+(arr.length?arr.map(function(x){ return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--rule);font-size:12.5px"><b>'+escr(x.name)+'</b><div style="font-weight:700">'+x.shares+' shares · '+gbp(x.val)+'</div></div>'; }).join('') : '<div style="color:var(--muted);font-size:13px">No investors yet.</div>')+'</div>'; }
         else if(key==='questions'){ var un=qs.filter(function(q){return !q.answer && priceById[q.deal_id]!==undefined;}); h='<div class="card"><h2>Open questions</h2>'+(un.length?un.map(function(q){ return '<div class="ovd" data-id="'+escr(q.deal_id)+'" style="padding:8px 0;border-bottom:1px solid var(--rule);font-size:12.5px;cursor:pointer"><div style="color:var(--muted);font-size:11px">'+escr(dealTitle(q.deal_id))+' · '+escr(q.name||'Investor')+'</div><div>'+escr(q.body)+'</div></div>'; }).join('') : '<div style="color:var(--muted);font-size:13px">No open questions.</div>')+'</div>'; }
         box.innerHTML=h;
@@ -834,8 +851,10 @@
     EDIT_ID=d.id; EDIT_DEAL=d;
     $('#publish').textContent='Save changes';
     var banner=$('#edit-banner'); if(banner){ banner.style.display='block'; banner.textContent='Editing: '+(d.title||'deal')+' — change anything and Save.'; }
-    if(!r){ // older deal without raw inputs — prefill what we can
-      $('#f-name').value=d.title||''; $('#f-desc').value=d.desc||''; recompute(); validate(); return;
+    if(!r){ // older deal without raw inputs — prefill what we can, then open the builder
+      $('#f-name').value=d.title||''; $('#f-desc').value=d.desc||''; recompute(); validate();
+      var bn=$('#edit-banner'); if(bn) bn.textContent='Editing: '+(d.title||'deal')+' — this deal predates full edit, so re-enter the figures, then Save.';
+      go('new'); return;
     }
     $('#f-name').value=r.name||''; $('#f-desc').value=r.desc||'';
     $('#f-type').value=r.type||'residential'; populateCats(r.type||'residential');
