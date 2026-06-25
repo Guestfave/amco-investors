@@ -901,11 +901,11 @@
     var btn=this; var editing=!!EDIT_ID; btn.textContent=editing?'Saving…':'Publishing…';
     var obj=buildDealObject();
     Promise.resolve(editing?DB.patch(obj):DB.add(obj)).then(function(ok){
-      var d=$('#pub-done'); d.style.display='block';
-      if(DB.on && ok){ d.style.color='var(--sage)'; d.textContent=editing?'✓ Changes saved to the live deal. Investors will see the update.':'✓ Published to the live investor site — investors will see it next time the app loads.'; clearForm(); renderDeals(); }
-      else if(DB.on && !ok){ d.style.color='var(--danger)'; d.textContent='⚠ Couldn\u2019t save to the shared database — saved in this browser only. Check the Supabase keys and table permissions.'; }
-      else { d.style.color='var(--sage)'; d.textContent=editing?'✓ Changes saved in this browser.':'✓ Saved in this browser. Add your Supabase keys (DEPLOY.md) to share across devices.'; clearForm(); renderDeals(); }
-      btn.textContent = EDIT_ID ? 'Save changes' : 'Publish investment';
+      if(DB.on && !ok){ var de=$('#pub-done'); de.style.display='block'; de.style.color='var(--danger)'; de.textContent='⚠ Couldn\u2019t save to the shared database — saved in this browser only. Check the Supabase keys and table permissions.'; btn.textContent=EDIT_ID?'Save changes':'Publish investment'; return; }
+      clearForm(); renderDeals();
+      if(editing){ go('deals'); }
+      else { var d=$('#pub-done'); d.style.display='block'; d.style.color='var(--sage)'; d.textContent=DB.on?'✓ Published to the live investor site — investors will see it next time the app loads.':'✓ Saved in this browser. Add your Supabase keys (DEPLOY.md) to share across devices.'; }
+      btn.textContent='Publish investment';
     });
   };
   var px=$('#proto-x'); if(px) px.onclick=function(){ $('#proto-banner').style.display='none'; };
