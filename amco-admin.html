@@ -303,6 +303,21 @@
 <!-- INVESTORS STUB -->
 <div class="page" id="page-investors"><div class="wrap"><div class="card" style="text-align:center;padding:40px"><div class="eyebrow" style="color:var(--clay)">Investors</div><h1 class="disp" style="font-size:22px;margin:10px 0 6px">Investor management</h1><p style="color:var(--muted);font-size:13px;max-width:440px;margin:0 auto">Every investor, their holdings across deals, KYC status, and incoming redemption requests. We can build this next.</p><a class="btn" style="margin-top:16px" data-go="overview">Back to dashboard</a></div></div></div>
 
+<div id="pdf-modal" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.55);z-index:60;align-items:flex-start;justify-content:center;padding:24px;overflow:auto">
+  <div style="max-width:840px;width:100%">
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px">Preview — review before downloading</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" id="pdf-cancel" style="background:#fff;font-size:12.5px">Cancel</button>
+        <button class="btn" id="pdf-download" style="font-size:12.5px">Download PDF</button>
+      </div>
+    </div>
+    <div id="pdf-frame" style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);margin:0 auto">
+      <div id="pdf-scale" style="transform-origin:top left"><div id="pdf-sheet"></div></div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var root=document.getElementById('amco-admin');
@@ -377,6 +392,11 @@
     $('.top').scrollIntoView({block:'start'});
   }
   root.addEventListener('click',function(e){ var g=e.target.closest('[data-go]'); if(g){ e.preventDefault(); if(g.dataset.go==='new'){ clearForm(); } go(g.dataset.go); } });
+  (function(){ var c=$('#pdf-cancel'), dl=$('#pdf-download'), m=$('#pdf-modal');
+    if(c) c.onclick=closePdfPreview;
+    if(dl) dl.onclick=downloadDealPdf;
+    if(m) m.addEventListener('click',function(e){ if(e.target===m) closePdfPreview(); });
+  })();
 
   /* home stats */
   (function(){
@@ -544,6 +564,80 @@
       ? '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;margin-bottom:6px">Update history</div>'+ups.map(function(u){ var sm=stageMeta(u.stage); var dt=new Date(u.at); return '<div style="border-bottom:1px solid var(--rule);padding:8px 0"><div style="font-size:11px;color:var(--clay);font-weight:700">'+sm.label+' · '+dt.toLocaleDateString('en-GB')+'</div><div style="font-size:12.5px;margin-top:2px">'+escr(u.text)+'</div></div>'; }).join('')
       : '<div style="font-size:12px;color:var(--muted)">No updates posted yet.</div>';
   }
+  function buildDealSheet(d){
+    var logo=(root.querySelector('.blogo')||{}).src||'';
+    var p=d.per||{}; var minInv=(d.minShares||1)*(d.sharePrice||0);
+    var line=function(l,v,bb){ return '<div style="display:flex;justify-content:space-between;padding:7px 0;'+(bb===false?'':'border-bottom:1px solid #E6E3DF;')+'font-size:12.5px"><span style="color:#5C6A64">'+escr(l)+'</span><b style="color:#333">'+escr(v)+'</b></div>'; };
+    var rowsBrk=(d.breakdown||[]).map(function(r){return line(r[0],r[1]);}).join('');
+    var perRows=[['Cash back at refinance',gbp(p.cashout||0)],['Money left in',gbp(p.leftIn||0)],['Income, day one',gbp(p.day||0)+' / yr'],['Income after refi',gbp(p.refi||0)+' / yr']];
+    var rowsPer=perRows.map(function(r){return line(r[0],r[1]);}).join('');
+    var dets=(d.details||[]).filter(function(r){ return r&&r[1]!=null&&r[1]!==''&&String(r[1]).toUpperCase()!=='NA'; });
+    var det=dets.length? dets.map(function(r){return line(r[0],r[1]);}).join('') : '<div style="color:#5C6A64;font-size:12px;padding:4px 0">Not specified.</div>';
+    var reasons=(d.reasons||[]).map(function(r){return '<li style="margin-bottom:5px">'+escr(r)+'</li>';}).join('');
+    var metric=function(label,val,sub,color){ return '<div style="flex:1;border:1px solid #E6E3DF;border-radius:10px;padding:11px 12px"><div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#5C6A64;font-weight:700">'+label+'</div><div style="font-size:19px;font-weight:800;color:'+(color||'#333')+';font-family:\'Space Grotesk\',sans-serif;margin-top:3px">'+val+'</div>'+(sub?'<div style="font-size:10px;color:#5C6A64;margin-top:2px">'+sub+'</div>':'')+'</div>'; };
+    var head=function(t){ return '<div style="font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:#333;margin-bottom:6px">'+t+'</div>'; };
+    var today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    return '<div style="font-family:Inter,system-ui,sans-serif;color:#333;background:#fff;padding:40px 44px;width:760px;box-sizing:border-box">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #ED1D24;padding-bottom:14px">'+
+        '<div style="display:flex;align-items:center;gap:10px">'+(logo?'<img src="'+logo+'" style="height:34px;width:34px">':'')+'<div style="font-family:\'Space Grotesk\',sans-serif;font-weight:700;font-size:22px">amco<span style="color:#ED1D24"> investors</span></div></div>'+
+        '<div style="text-align:right"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#5C6A64;font-weight:700">Investment summary</div><div style="font-size:11px;color:#5C6A64">'+today+'</div></div>'+
+      '</div>'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-top:18px">'+
+        '<div><div style="font-family:\'Space Grotesk\',sans-serif;font-size:26px;font-weight:800;line-height:1.1">'+escr(d.title||'Investment')+'</div><div style="font-size:12.5px;color:#5C6A64;margin-top:4px">'+escr(d.tag||'')+(d.loc?' · '+escr(d.loc):'')+'</div></div>'+
+        '<div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:6px 12px;border-radius:999px;background:#FCE9E8;color:#ED1D24;white-space:nowrap">'+capr(d.risk)+' risk</div>'+
+      '</div>'+
+      (d.desc?'<div style="font-size:13px;color:#333;margin-top:12px;line-height:1.5">'+escr(d.desc)+'</div>':'')+
+      '<div style="display:flex;gap:9px;margin-top:18px">'+
+        metric('Share price',gbp(d.sharePrice||0),(d.sharesTotal||0)+' shares')+
+        metric('Min investment',gbp(minInv),(d.minShares||1)+' share min')+
+        metric('Day-one yield',d.dayYield||'—','',d.dayYield?'#ED1D24':'#333')+
+        metric('After refi',d.refiYield||'—','','#3F7A5C')+
+        metric('Capital back',d.capBack||'—','at refinance')+
+      '</div>'+
+      '<div style="display:flex;gap:24px;margin-top:22px">'+
+        '<div style="flex:1">'+head('The deal in full')+rowsBrk+'</div>'+
+        '<div style="flex:1">'+head('Per share')+rowsPer+'<div style="height:14px"></div>'+head('Property details')+det+'</div>'+
+      '</div>'+
+      (reasons?'<div style="margin-top:22px">'+head('Why this risk rating')+'<ul style="margin:0;padding-left:18px;font-size:12px;color:#5C6A64">'+reasons+'</ul></div>':'')+
+      '<div style="margin-top:26px;border-top:1px solid #E6E3DF;padding-top:12px;font-size:9.5px;color:#5C6A64;line-height:1.55">This document is for information only. It is not a financial promotion, financial advice, or an offer to invest. Projected figures are illustrative and not guaranteed; property prices and rents can fall as well as rise and your capital is at risk. Amco Investors co-invests 25% alongside investors.</div>'+
+    '</div>';
+  }
+  function loadPdfLibs(){
+    if(window._pdflibs) return window._pdflibs;
+    window._pdflibs=new Promise(function(resolve,reject){
+      function inject(src,cb){ var s=document.createElement('script'); s.src=src; s.onload=cb; s.onerror=function(){reject(new Error('load'));}; document.head.appendChild(s); }
+      inject('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){ inject('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',function(){ resolve(true); }); });
+    });
+    return window._pdflibs;
+  }
+  function openPdfPreview(d){
+    var modal=$('#pdf-modal'), sheet=$('#pdf-sheet');
+    sheet.innerHTML=buildDealSheet(d);
+    modal.dataset.fname='amco-'+String(d.title||'deal').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase();
+    modal.style.display='flex';
+    var avail=Math.min(800, window.innerWidth-48), sv=Math.min(1, avail/760);
+    var scale=$('#pdf-scale'); scale.style.transform='scale('+sv+')';
+    var h=sheet.offsetHeight||1000; var frame=$('#pdf-frame'); frame.style.width=(760*sv)+'px'; frame.style.height=(h*sv)+'px';
+    loadPdfLibs().catch(function(){});
+  }
+  function closePdfPreview(){ $('#pdf-modal').style.display='none'; }
+  function downloadDealPdf(){
+    var btn=$('#pdf-download'); btn.textContent='Preparing…'; btn.disabled=true;
+    loadPdfLibs().then(function(){
+      var sheet=$('#pdf-sheet'), scale=$('#pdf-scale'), prev=scale.style.transform; scale.style.transform='none';
+      return window.html2canvas(sheet,{scale:2,useCORS:true,backgroundColor:'#ffffff'}).then(function(canvas){
+        scale.style.transform=prev;
+        var img=canvas.toDataURL('image/jpeg',0.95);
+        var JsPDF=window.jspdf.jsPDF, pdf=new JsPDF('p','mm','a4');
+        var pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+        var iw=pw, ih=canvas.height*pw/canvas.width;
+        if(ih<=ph){ pdf.addImage(img,'JPEG',0,0,iw,ih); }
+        else { var left=ih, pos=0; while(left>0){ pdf.addImage(img,'JPEG',0,pos,iw,ih); left-=ph; if(left>0){ pdf.addPage(); pos-=ph; } } }
+        pdf.save(($('#pdf-modal').dataset.fname||'amco-deal')+'.pdf');
+        btn.textContent='Download PDF'; btn.disabled=false;
+      });
+    }).catch(function(){ var s=$('#pdf-scale'); s.style.transform=s.style.transform.replace('none',''); btn.textContent='Download PDF'; btn.disabled=false; window.alert('The PDF tool couldn\u2019t load — check your internet connection and try again.'); });
+  }
   function openPubDeal(d){
     if(!d) return;
     var closeAt=d.closeAt||(Date.now()+((d.closesDays||14)*86400000));
@@ -554,6 +648,7 @@
     var actions = d.archived
       ? '<button class="btn btn-ghost" id="pd2-restore" style="font-size:12.5px">Restore</button><button class="btn" id="pd2-delete" style="font-size:12.5px;background:var(--danger);border-color:var(--danger)">Delete permanently</button>'
       : '<button class="btn" id="pd2-edit" style="font-size:12.5px">Edit deal</button><button class="btn btn-ghost" id="pd2-archive" style="font-size:12.5px">Archive</button>';
+    actions += '<button class="btn btn-ghost" id="pd2-pdf" style="font-size:12.5px">⬇ Download as PDF</button>';
     var stepper='<div style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 14px">'+STAGES.map(function(s,i){ var done=i<=st.idx; return '<div title="'+s[2]+'" style="flex:1 1 auto;min-width:64px;text-align:center;padding:7px 5px;border-radius:8px;font-size:10px;font-weight:700;'+(done?'background:var(--clay);color:#fff':'background:#F1F0EE;color:var(--muted)')+'">'+s[1]+'</div>'; }).join('')+'</div>';
     var stageOpts=STAGES.map(function(s){ return '<option value="'+s[0]+'"'+(s[0]===st.key?' selected':'')+'>'+s[1]+'</option>'; }).join('');
     var html='<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+
@@ -590,6 +685,7 @@
     Promise.resolve(DB.commitments(d.id)).then(function(rows){ renderCommitBar($('#pd2-commits'),rows,d); setSeenCommit(d.id,(rows||[]).length); refreshQADot(); });
     Promise.resolve(DB.questions(d.id)).then(function(rows){ renderQAadmin($('#pd2-qa'),rows,d); });
     var ed=$('#pd2-edit'); if(ed) ed.onclick=function(){ populateForm(d); };
+    var pf=$('#pd2-pdf'); if(pf) pf.onclick=function(){ openPdfPreview(d); };
     var pu=$('#pd2-postupdate'); if(pu) pu.onclick=function(){
       var txt=($('#pd2-update').value||'').trim(), stg=$('#pd2-stage').value;
       if(!txt && stg===(d.stage||'funding')){ var done=$('#pd2-updatedone'); done.style.display='inline'; done.style.color='var(--muted)'; done.textContent='Write an update or change the stage first.'; return; }
