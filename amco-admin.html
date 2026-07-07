@@ -365,13 +365,14 @@
     function remove(id){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE+'?deal_id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:hdr()}).then(function(r){return r.ok;}).catch(function(){localRemove(id);return false;}); } localRemove(id); return Promise.resolve(true); }
     function localCommitments(dealId){ try{return JSON.parse(window.localStorage.getItem('amco_commitments')||'[]').filter(function(c){return c.deal_id===dealId;});}catch(e){return [];} }
     function commitments(dealId){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments?deal_id=eq.'+encodeURIComponent(dealId)+'&select=*&order=created_at.desc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localCommitments(dealId); }); } return Promise.resolve(localCommitments(dealId)); }
+    function removeCommitment(cid){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments?id=eq.'+encodeURIComponent(cid),{method:'DELETE',headers:hdr()}).then(function(r){return r.ok;}).catch(function(){return false;}); } try{ var a=JSON.parse(window.localStorage.getItem('amco_commitments')||'[]'); a=a.filter(function(c){return String(c.id)!==String(cid);}); window.localStorage.setItem('amco_commitments',JSON.stringify(a)); }catch(e){} return Promise.resolve(true); }
     function allCommitments(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/commitments?select=deal_id,shares,name,email',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ try{return JSON.parse(window.localStorage.getItem('amco_commitments')||'[]');}catch(e){return [];} }); } try{ return Promise.resolve(JSON.parse(window.localStorage.getItem('amco_commitments')||'[]')); }catch(e){ return Promise.resolve([]); } }
     function localQ(){ try{return JSON.parse(window.localStorage.getItem('amco_questions')||'[]');}catch(e){return [];} }
     function localAnswer(id,ans){ try{var a=localQ(); for(var i=0;i<a.length;i++){if(String(a[i].id)===String(id))a[i].answer=ans;} window.localStorage.setItem('amco_questions',JSON.stringify(a));}catch(e){} return true; }
     function questions(dealId){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions?deal_id=eq.'+encodeURIComponent(dealId)+'&select=*&order=created_at.asc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localQ().filter(function(q){return q.deal_id===dealId;}); }); } return Promise.resolve(localQ().filter(function(q){return q.deal_id===dealId;})); }
     function allQuestions(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/questions?select=*&order=created_at.desc',{headers:hdr()}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(function(){ return localQ(); }); } return Promise.resolve(localQ()); }
     function answer(id,ans){ if(on && String(id).indexOf('lq_')!==0){ return fetch(SUPABASE_URL+'/rest/v1/questions?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:Object.assign({Prefer:'return=minimal'},hdr()),body:JSON.stringify({answer:ans})}).then(function(r){ return r.ok; }).catch(function(){ return localAnswer(id,ans); }); } return Promise.resolve(localAnswer(id,ans)); }
-    return { list:list, add:add, patch:patch, remove:remove, commitments:commitments, allCommitments:allCommitments, questions:questions, allQuestions:allQuestions, answer:answer, on:on };
+    return { list:list, add:add, patch:patch, remove:remove, commitments:commitments, removeCommitment:removeCommitment, allCommitments:allCommitments, questions:questions, allQuestions:allQuestions, answer:answer, on:on };
   })();
   var gbp=function(v){return (v<0?'−£':'£')+Math.abs(Math.round(v)).toLocaleString('en-GB');};
   var gbpk=function(v){return '£'+(v/1000).toFixed(0)+'k';};
@@ -552,6 +553,7 @@
         '<div><span style="color:var(--clay)">■</span> Committed: <b>'+committed+'</b> shares · '+gbp(committed*(d.sharePrice||0))+'</div>'+
         '<div><span style="color:#C9CCC6">■</span> Remaining: <b>'+remaining+'</b> shares · '+gbp(remaining*(d.sharePrice||0))+'</div>'+
         '<div style="color:var(--muted);margin-top:4px;font-size:12px">'+rows.length+' investor'+(rows.length===1?'':'s')+' · tap the red bar for the breakdown</div>'+
+        (total>0&&committed>=total?'<div style="margin-top:6px;font-size:12px;font-weight:700;color:var(--clay)">🎉 Fully committed — move the stage to <u>Funded</u> in Progress above and post an update.</div>':'')+
       '</div>'+
     '</div>'+
     '<div id="commit-breakdown" style="display:none;margin-top:14px"></div>';
@@ -768,8 +770,18 @@
     if(!rows.length){ panel.innerHTML='<div style="font-size:12.5px;color:var(--muted)">No one has committed to this deal yet.</div>'; return; }
     var totalShares=rows.reduce(function(a,r){return a+(parseInt(r.shares)||0);},0);
     var html='<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);font-weight:700;margin-bottom:8px">'+rows.length+' investor'+(rows.length>1?'s':'')+' · '+totalShares+' shares · '+gbp(totalShares*(d.sharePrice||0))+' committed</div>';
-    html+=rows.map(function(r){ return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--rule);font-size:12.5px"><div><b>'+escr(r.name||'Investor')+'</b>'+(r.email?' <span style="color:var(--muted)">'+escr(r.email)+'</span>':'')+'</div><div style="font-family:\'Space Grotesk\',sans-serif;font-weight:700">'+(parseInt(r.shares)||0)+' shares</div></div>'; }).join('');
+    html+=rows.map(function(r){ return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--rule);font-size:12.5px"><div><b>'+escr(r.name||'Investor')+'</b>'+(r.email?' <span style="color:var(--muted)">'+escr(r.email)+'</span>':'')+'</div><div style="display:flex;align-items:center;gap:10px"><span style="font-family:\'Space Grotesk\',sans-serif;font-weight:700">'+(parseInt(r.shares)||0)+' shares</span>'+(r.id!=null?'<button class="rm-commit" data-cid="'+escr(String(r.id))+'" style="border:1px solid var(--rule);background:#fff;color:var(--danger);border-radius:7px;font-size:11px;font-weight:700;padding:4px 9px;cursor:pointer">Remove</button>':'')+'</div></div>'; }).join('');
     panel.innerHTML=html;
+    panel.querySelectorAll('.rm-commit').forEach(function(b){ b.onclick=function(){
+      var row=rows.filter(function(r){return String(r.id)===b.dataset.cid;})[0];
+      var who=row?(row.name||row.email||'this investor'):'this investor';
+      if(!window.confirm('Remove '+who+'\u2019s commitment of '+(row?row.shares:'?')+' share(s)? The shares go back into the pool.')) return;
+      b.textContent='…';
+      Promise.resolve(DB.removeCommitment(b.dataset.cid)).then(function(ok){
+        if(ok===false){ b.textContent='Remove'; window.alert('Couldn\u2019t remove — run the commitments delete policy in Supabase (I\u2019ve given you the SQL) and try again.'); return; }
+        openPubDeal(d);
+      });
+    }; });
   }
   function bindDealActions(list){
     var map={}; list.forEach(function(d){map[d.id]=d;});
