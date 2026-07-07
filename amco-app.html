@@ -637,7 +637,27 @@
   function refreshReplyDot(){ var dot=root.querySelector('#pf-dot'); if(dot) dot.style.display = (HOLDINGS.some(function(h){return dealHasNewReply(h.id);}) || heldNewUpdates().length>0) ? 'inline-block' : 'none'; }
   function loadReplies(){ Promise.resolve(DB.allQuestions()).then(function(qs){ ansMap={}; (qs||[]).forEach(function(q){ if(q.answer){ ansMap[q.deal_id]=(ansMap[q.deal_id]||0)+1; } }); renderList(); refreshReplyDot(); }).catch(function(){}); }
   function refreshDealFunding(d){ var el=root.querySelector('#d-prog'); if(el && current && current.id===d.id){ el.innerHTML=d.fundingPct+'% funded · '+d.sharesLeft+' of '+d.sharesTotal+' shares left<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div>'; } }
-  function applyFunding(){ return Promise.resolve(DB.allCommitments()).then(function(cs){ var m={}; (cs||[]).forEach(function(c){ m[c.deal_id]=(m[c.deal_id]||0)+(parseInt(c.shares)||0); }); DEALS.forEach(function(d){ var total=d.sharesTotal||0, committed=m[d.id]||0; d.committedShares=committed; d.fundingPct=total?Math.min(100,Math.round(committed/total*100)):0; d.sharesLeft=Math.max(0,total-committed); }); renderList(); if(current) refreshDealFunding(current); }).catch(function(){}); }
+  function applyFunding(){ return Promise.resolve(DB.allCommitments()).then(function(cs){ var m={}; (cs||[]).forEach(function(c){ m[c.deal_id]=(m[c.deal_id]||0)+(parseInt(c.shares)||0); }); DEALS.forEach(function(d){ var total=d.sharesTotal||0, committed=m[d.id]||0; d.committedShares=committed; d.fundingPct=total?Math.min(100,Math.round(committed/total*100)):0; d.sharesLeft=Math.max(0,total-committed); }); renderList(); if(current){ refreshDealFunding(current); applyDealStatus(current); } }).catch(function(){}); }
+  function dealStatus(d){
+    if(!d) return null;
+    if((d.stage||'funding')!=='funding') return {key:'progressed',label:'Raise closed'};
+    if(d.sharesLeft!=null && d.sharesLeft<=0) return {key:'full',label:'Fully committed'};
+    var dl=d.deadline||d.closeAt||0; if(dl && dl<Date.now()) return {key:'closed',label:'Closed to new investment'};
+    if(d.sharesLeft!=null && d.sharesLeft<Math.max(1,d.minShares||1)) return {key:'full',label:'Fully committed'};
+    return null;
+  }
+  function applyDealStatus(d){
+    if(!current || current.id!==d.id) return;
+    var st=dealStatus(d), btn=root.querySelector('#d-invest'), mbtn=root.querySelector('#m-invest'), note=root.querySelector('#d-minnote');
+    if(st){
+      if(btn){ btn.textContent=st.label; btn.style.opacity='.45'; btn.style.pointerEvents='none'; }
+      if(mbtn){ mbtn.textContent=st.label; mbtn.style.opacity='.45'; mbtn.style.pointerEvents='none'; }
+      if(note){ note.textContent = st.key==='full' ? 'All shares in this deal are reserved. Ask a question to be told if any reopen.' : (st.key==='closed' ? 'The investment window for this deal has closed.' : 'This raise is complete — the deal is now progressing.'); }
+    } else {
+      if(btn){ btn.textContent='Invest in this deal'; btn.style.opacity=''; btn.style.pointerEvents=''; }
+      if(mbtn){ mbtn.style.opacity=''; mbtn.style.pointerEvents=''; }
+    }
+  }
   var STAGES_INV=[['funding','Funding'],['funded','Funded'],['purchased','Purchased'],['refurb','Refurbishing'],['refinanced','Refinanced'],['let','Let & earning'],['sold','Completed']];
   function stageIdx(key){ for(var i=0;i<STAGES_INV.length;i++){ if(STAGES_INV[i][0]===key) return i; } return 0; }
   function stageLabel(key){ return (STAGES_INV[stageIdx(key)]||['','Funding'])[1]; }
@@ -705,12 +725,15 @@
         '</div></div>'+
         '<div class="side"><span class="risk '+d.risk+'">'+riskLabel(d.risk)+'</span>'+
           '<div class="prog">'+d.fundingPct+'% funded<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div></div>'+
-          '<div class="closes" data-dl="'+d.deadline+'">⏳ Closes in <span class="cd">'+leftStr(d.deadline)+'</span></div>'+
-          '<button class="btn invest-btn">Invest</button><button class="btn btn-ghost view-btn" style="font-size:12px">View details</button></div>';
+          (dealStatus(d)
+            ? '<div class="closes" style="color:var(--clay);font-weight:800">'+dealStatus(d).label+'</div><button class="btn btn-ghost view-btn" style="font-size:12px">View details</button>'
+            : '<div class="closes" data-dl="'+d.deadline+'">⏳ Closes in <span class="cd">'+leftStr(d.deadline)+'</span></div>'+
+              '<button class="btn invest-btn">Invest</button><button class="btn btn-ghost view-btn" style="font-size:12px">View details</button>')+
+        '</div>';
       el.querySelector('.thumb').onclick=function(){openDeal(d.id);};
       el.querySelector('.lbody').onclick=function(){openDeal(d.id);};
       el.querySelector('.view-btn').onclick=function(){openDeal(d.id);};
-      el.querySelector('.invest-btn').onclick=function(){openDeal(d.id);};
+      var ib=el.querySelector('.invest-btn'); if(ib) ib.onclick=function(){openDeal(d.id);};
       list.appendChild(el);
     });
     applyFilters();
@@ -760,6 +783,7 @@
     updateCountdowns();
     loadQA(d.id);
     renderProgress(d);
+    applyDealStatus(d);
     markDealAnsSeen(d.id); markDealUpSeen(d.id); refreshReplyDot(); renderList();
     go('deal');
   }
@@ -788,6 +812,7 @@
   function renderStake(){
     if(!current)return; var d=current; var min=Math.max(1, d.minShares||1);
     var n=Math.max(min,parseInt(root.querySelector('#shares').value)||min);
+    if(d.sharesLeft!=null && d.sharesLeft>0 && n>d.sharesLeft){ n=Math.max(min,d.sharesLeft); }
     root.querySelector('#shares').value=n; var p=d.per;
     root.querySelector('#m-total').textContent=f(n*d.sharePrice);
     root.querySelector('#m-cashout').textContent=f(n*p.cashout);
@@ -797,7 +822,7 @@
     root.querySelector('#m-total5').textContent=f(n*p.total5);
     root.querySelector('#m-sh').textContent=n;
   }
-  root.querySelector('#plus').onclick=function(){var i=root.querySelector('#shares');i.value=(parseInt(i.value)||0)+1;renderStake();};
+  root.querySelector('#plus').onclick=function(){var i=root.querySelector('#shares');var v=(parseInt(i.value)||0)+1;if(current&&current.sharesLeft!=null&&current.sharesLeft>0&&v>current.sharesLeft){v=current.sharesLeft;}i.value=v;renderStake();};
   root.querySelector('#minus').onclick=function(){var i=root.querySelector('#shares');var min=Math.max(1,(current&&current.minShares)||1);i.value=Math.max(min,(parseInt(i.value)||min)-1);renderStake();};
   root.querySelector('#shares').oninput=renderStake;
   root.querySelector('#d-invest').onclick=function(){ var min=Math.max(1,(current&&current.minShares)||1); openInvest(current,Math.max(min,parseInt(root.querySelector('#shares').value)||min));};
@@ -807,6 +832,8 @@
   var curInvest=null;
   function openInvest(d,n){
     if(!d)return;
+    if(dealStatus(d)){ applyDealStatus(d); return; }
+    if(d.sharesLeft!=null && n>d.sharesLeft){ n=d.sharesLeft; }
     curInvest={d:d,n:n};
     root.querySelector('#i-title').textContent=n+' share'+(n>1?'s':'')+' · '+d.title;
     root.querySelector('#i-total').textContent=f(n*d.sharePrice);
@@ -902,8 +929,11 @@
   function setUser(u){ state.loggedIn=true; state.name=u.name; state.email=u.email; HOLDINGS=u.holdings||[]; setAuthUI(); Store.set('amco_session', u.email); }
   function persistUser(){ if(!state.email)return; var users=loadUsers(); if(users[state.email]){ users[state.email].holdings=HOLDINGS; saveUsers(users); } }
   function addHolding(id,n){ var ex=null; HOLDINGS.forEach(function(h){ if(h.id===id) ex=h; });
+    var dd=byId[id];
+    if(dd && dealStatus(dd)){ applyDealStatus(dd); renderList(); return; }
+    if(dd && dd.sharesLeft!=null){ n=Math.min(n, dd.sharesLeft); if(n<=0){ applyFunding(); return; } }
     if(ex){ ex.shares+=n; } else { HOLDINGS.push({id:id,shares:n,stage:1,monthsHeld:0}); } persistUser();
-    var d=byId[id]; if(d){ var total=d.sharesTotal||0; d.committedShares=(d.committedShares||0)+n; d.fundingPct=total?Math.min(100,Math.round(d.committedShares/total*100)):0; d.sharesLeft=Math.max(0,total-d.committedShares); renderList(); refreshDealFunding(d); }
+    var d=byId[id]; if(d){ var total=d.sharesTotal||0; d.committedShares=(d.committedShares||0)+n; d.fundingPct=total?Math.min(100,Math.round(d.committedShares/total*100)):0; d.sharesLeft=Math.max(0,total-d.committedShares); renderList(); refreshDealFunding(d); applyDealStatus(d); }
     if(window.DB||DB){ Promise.resolve(DB.commit({deal_id:id, name:state.name||'Investor', email:state.email||'', shares:n})).then(function(){ applyFunding(); }); } }
   function signOut(){ state.loggedIn=false; state.name=''; state.email=''; HOLDINGS=[]; setAuthUI(); Store.del('amco_session'); setAuthMode('login'); go('welcome'); }
   function loadSession(){ var em=Store.get('amco_session'); if(!em)return; var u=loadUsers()[em]; if(u) setUser(u); }
@@ -939,21 +969,27 @@
       return;
     }
     var invested=0, returned=0, incomeToDate=0;
-    HOLDINGS.forEach(function(h){ var d=byId[h.id]; invested+=h.shares*d.sharePrice; if(h.stage>=2) returned+=h.shares*d.per.cashout; incomeToDate+=statement(h).net*h.monthsHeld; });
+    HOLDINGS.forEach(function(h){ var d=byId[h.id]; if(!d)return; if(d.stage){ h.stage = stageIdx(d.stage)>=4 ? 2 : 1; } invested+=h.shares*d.sharePrice; if(h.stage>=2) returned+=h.shares*d.per.cashout; incomeToDate+=statement(h).net*h.monthsHeld; });
     var working=invested-returned;
     var sum=[['Total invested',f(invested)],['Capital returned',f(returned)],['Still working',f(working)],['Income to date',f(incomeToDate)]];
     root.querySelector('#pf-summary').innerHTML=sum.map(function(s){return '<div class="card sum" style="padding:14px"><div class="k">'+s[0]+'</div><div class="v">'+s[1]+'</div></div>';}).join('');
 
     root.querySelector('#pf-holdings').innerHTML=HOLDINGS.map(function(h){
       var d=byId[h.id], st=statement(h);
-      var stageTxt = h.stage>=2 ? 'Stage 2 · Refinanced — capital returned, earning' : 'Stage 1 · Bought & earning — refinance to come';
+      if(!d) return '';
+      var sIdx=stageIdx(d.stage||'funding');
+      var stepper='<div style="display:flex;gap:3px;flex-wrap:wrap;margin:12px 0 6px">'+STAGES_INV.map(function(s,i){ var done=i<=sIdx; return '<div style="flex:1 1 auto;min-width:56px;text-align:center;padding:5px 4px;border-radius:7px;font-size:9.5px;font-weight:700;'+(done?'background:var(--clay);color:#fff':'background:#EFEEEC;color:var(--muted)')+'">'+s[1]+'</div>'; }).join('')+'</div>';
+      var ups=d.updates||[]; var last=ups.length?ups[ups.length-1]:null;
+      var lastHtml=last?'<div style="background:var(--clayBg);border-radius:9px;padding:9px 12px;font-size:12px;margin-bottom:12px"><b style="color:var(--clay)">Latest update ('+new Date(last.at).toLocaleDateString('en-GB')+'):</b> '+escq(last.text)+'</div>':'';
+      var stageTxt='Now at: <b style="color:var(--ink)">'+stageLabel(d.stage||'funding')+'</b>'+(h.stage>=2?' — capital returned, earning on money left in':' — refinance to come');
       return '<div class="card">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
           '<div><h2 style="margin:0">'+d.title+'</h2><div style="font-size:12px;color:var(--muted);margin-top:2px">'+h.shares+' shares · '+f(h.shares*d.sharePrice)+' invested</div></div>'+
           '<span class="risk '+d.risk+'">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+' risk</span>'+
         '</div>'+
-        '<div class="stage"><div class="stagepip on"></div><div class="stagepip '+(h.stage>=2?'on':'')+'"></div></div>'+
-        '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">'+stageTxt+'</div>'+
+        stepper+
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">'+stageTxt+'</div>'+
+        lastHtml+
         '<div class="grid2">'+
           '<div class="stmt">'+
             '<div class="eyebrow" style="margin-bottom:8px">This month\u2019s statement</div>'+
