@@ -704,6 +704,8 @@
 
   /* list */
   function riskLabel(r){return r.charAt(0).toUpperCase()+r.slice(1)+' risk';}
+  function riskText(d){ return d.riskScore?('Risk '+d.riskScore+'/5'):riskLabel(d.risk); }
+  function timeBadge(d,mt){ return d.timeScore?('<span class="risk" style="background:#E8F0F2;color:var(--teal);'+(mt?'margin-top:6px;':'')+'">⏱ Time '+d.timeScore+'/5</span>'):''; }
   function renderList(){
     var list=root.querySelector('#list'); list.innerHTML='';
     if(!DEALS.length){ list.innerHTML='<div class="card" style="text-align:center;padding:40px"><div class="eyebrow" style="color:var(--clay)">No live deals yet</div><h2 style="margin:10px 0 6px">Nothing open right now</h2><p style="color:var(--muted);font-size:13.5px;max-width:380px;margin:0 auto">New investment opportunities will appear here as soon as they\u2019re published. Check back soon.</p></div>'; return; }
@@ -714,8 +716,9 @@
       var hasUpdate = dealHasNewUpdate(d.id) && HOLDINGS.some(function(h){return h.id===d.id;});
       var el=document.createElement('div'); el.className='lcard';
       el.dataset.type=d.type; el.dataset.risk=d.riskN; el.dataset.yield=parseFloat(d.refiYield); el.dataset.share=d.sharePrice;
+      var thumbBg=(d.photos&&d.photos[0])?'background:url('+d.photos[0]+') center/cover no-repeat':'background:'+d.grad;
       el.innerHTML=
-        '<div class="thumb" style="background:'+d.grad+'"><span class="tag">'+d.tag+'</span>'+(isNew?'<span class="newbadge">NEW</span>':'')+'</div>'+
+        '<div class="thumb" style="'+thumbBg+'"><span class="tag">'+d.tag+'</span>'+(isNew?'<span class="newbadge">NEW</span>':'')+'</div>'+
         '<div class="lbody"><h3>'+d.title+(hasReply?' <span class="replybadge">NEW REPLY</span>':'')+(hasUpdate?' <span class="updatebadge">UPDATE</span>':'')+'</h3><div class="loc">'+d.loc+'</div><div class="desc">'+d.desc+'</div>'+
         '<div class="stats">'+
           '<div class="stat"><div class="k">Share price</div><div class="v">'+f(d.sharePrice)+'</div><div class="s">'+d.sharesTotal+' shares · min 1</div></div>'+
@@ -723,7 +726,7 @@
           '<div class="stat"><div class="k">After refi</div><div class="v" style="color:var(--sage)">'+d.refiYield+'</div><div class="s">on money left in</div></div>'+
           '<div class="stat"><div class="k">Capital back</div><div class="v">'+d.capBack+'</div><div class="s">at refinance</div></div>'+
         '</div></div>'+
-        '<div class="side"><span class="risk '+d.risk+'">'+riskLabel(d.risk)+'</span>'+
+        '<div class="side"><span class="risk '+d.risk+'">'+riskText(d)+'</span>'+timeBadge(d,true)+
           '<div class="prog">'+d.fundingPct+'% funded<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div></div>'+
           (dealStatus(d)
             ? '<div class="closes" style="color:var(--clay);font-weight:800">'+dealStatus(d).label+'</div><button class="btn btn-ghost view-btn" style="font-size:12px">View details</button>'
@@ -763,8 +766,12 @@
   function openDeal(id){
     var d=byId[id]; current=d;
     var q=function(s){return root.querySelector(s);};
-    q('#d-crumb').textContent=d.title; q('#d-tag').textContent=d.tag; q('#d-img').style.background=d.grad;
-    q('#d-risk').className='risk '+d.risk; q('#d-risk').textContent=riskLabel(d.risk);
+    q('#d-crumb').textContent=d.title; q('#d-tag').textContent=d.tag;
+    (function(){ var img=q('#d-img'); img.onclick=null; img.style.cursor=''; img.title='';
+      if(d.photos&&d.photos.length){ var pi=0; img.style.background='url('+d.photos[0]+') center/cover no-repeat';
+        if(d.photos.length>1){ img.style.cursor='pointer'; img.title='Tap to see more photos ('+d.photos.length+')'; img.onclick=function(){ pi=(pi+1)%d.photos.length; img.style.background='url('+d.photos[pi]+') center/cover no-repeat'; }; } }
+      else { img.style.background=d.grad; } })();
+    q('#d-risk').className='risk '+d.risk; q('#d-risk').textContent=riskText(d)+(d.timeScore?(' · ⏱ Time '+d.timeScore+'/5'):'');
     q('#d-title').textContent=d.title; q('#d-loc').textContent=d.loc; q('#d-price').textContent=f2(d.sharePrice);
     q('#d-prog').innerHTML=d.fundingPct+'% funded · '+d.sharesLeft+' of '+d.sharesTotal+' shares left<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div>';
     q('#d-closes').setAttribute('data-dl', d.deadline);
@@ -772,11 +779,11 @@
     q('#d-dayyield').textContent=d.dayYield; q('#d-dayper').textContent=f(d.per.day);
     q('#d-refiyield').textContent=d.refiYield; q('#d-capback').textContent='~'+d.capBack; q('#d-refiper').textContent=f(d.per.refi);
     q('#d-price2').textContent=f2(d.sharePrice); q('#d-works').textContent=d.worksTxt; q('#d-loanmo').textContent=d.loanMonths;
-    q('#d-riskwhy').innerHTML='Why this is rated <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span>';
+    q('#d-riskwhy').innerHTML = d.riskScore ? ('Why these ratings — <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">Risk '+d.riskScore+'/5</span> · <span style="color:var(--teal)">Timeframe '+(d.timeScore||3)+'/5</span>') : ('Why this is rated <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span>');
     q('#d-breakdown').innerHTML=d.breakdown.map(function(r){return '<div class="kv"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('');
     var dc=q('#d-details-card');
     if(d.details && d.details.length){ q('#d-details').innerHTML=d.details.map(function(r){return '<div class="kv"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join(''); dc.style.display=''; } else { dc.style.display='none'; }
-    q('#d-reasons').innerHTML=d.reasons.map(function(r){return '<li style="margin-bottom:6px">'+r+'</li>';}).join('');
+    q('#d-reasons').innerHTML=d.reasons.map(function(r){return '<li style="margin-bottom:6px">'+r+'</li>';}).join('')+((d.timeReasons&&d.timeReasons.length)?('<li style="margin:10px 0 6px;font-weight:800;color:var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.03em;list-style:none">Timeframe</li>'+d.timeReasons.map(function(r){return '<li style="margin-bottom:6px">'+r+'</li>';}).join('')):'');
     var min=Math.max(1, d.minShares||1);
     root.querySelector('#shares').value=min; renderStake();
     root.querySelector('#d-minnote').textContent='Minimum '+min+' share'+(min>1?'s':'')+' to invest · '+f(min*d.sharePrice)+' minimum';
@@ -868,7 +875,7 @@
     matches.forEach(function(d){
       var sh=Math.floor(amt/d.sharePrice);
       var el=document.createElement('div'); el.className='brow';
-      el.innerHTML='<div style="flex:1 1 200px"><div style="font-weight:700;font-family:\'Space Grotesk\',sans-serif">'+d.title+' <span class="risk '+d.risk+'" style="font-size:9.5px;margin-left:6px">'+riskLabel(d.risk)+'</span></div>'+
+      el.innerHTML='<div style="flex:1 1 200px"><div style="font-weight:700;font-family:\'Space Grotesk\',sans-serif">'+d.title+' <span class="risk '+d.risk+'" style="font-size:9.5px;margin-left:6px">'+riskText(d)+'</span></div>'+
         '<div style="font-size:12px;color:var(--muted);margin-top:3px">'+sh+' share'+(sh>1?'s':'')+' ('+f(sh*d.sharePrice)+') · '+d.dayYield+' day one · '+d.refiYield+' after refi · closes in '+leftStr(d.deadline)+'</div></div>'+
         '<div style="display:flex;gap:8px"><button class="btn btn-ghost b-view" style="font-size:12px" data-id="'+d.id+'">View</button><button class="btn b-inv" style="font-size:12px" data-id="'+d.id+'" data-sh="'+sh+'">Invest</button></div>';
       box.appendChild(el);
@@ -985,7 +992,7 @@
       return '<div class="card">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
           '<div><h2 style="margin:0">'+d.title+'</h2><div style="font-size:12px;color:var(--muted);margin-top:2px">'+h.shares+' shares · '+f(h.shares*d.sharePrice)+' invested</div></div>'+
-          '<span class="risk '+d.risk+'">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+' risk</span>'+
+          '<span class="risk '+d.risk+'">'+riskText(d)+'</span>'+
         '</div>'+
         stepper+
         '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">'+stageTxt+'</div>'+
