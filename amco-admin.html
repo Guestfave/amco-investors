@@ -236,6 +236,14 @@
         </div>
         <div class="frow" style="margin-top:9px">
           <label class="afield"><span>Type</span><div class="ig"><select id="f-type" style="width:100%"><option value="residential">Residential</option><option value="commercial">Commercial</option><option value="industrial">Industrial</option><option value="mixed">Mixed use</option></select></div></label>
+          <label class="afield"><span>Tenure</span><div class="ig"><select id="f-tenure" style="width:100%"><option value="freehold">Freehold</option><option value="leasehold">Leasehold</option></select></div></label>
+          <div id="lease-fields" style="display:none;grid-column:1/-1">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <label class="afield"><span>Ground rent</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-ground" value="" placeholder="0"><span class="pre">/yr</span></div></label>
+              <label class="afield"><span>Service charge</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-svc" value="" placeholder="0"><span class="pre">/yr</span></div></label>
+            </div>
+            <label class="afield"><span>Ground rent fixed?</span><div class="ig"><select id="f-grfixed" style="width:100%"><option value="1">Fixed (or peppercorn)</option><option value="0">Escalating / reviewed</option></select></div></label>
+          </div>
           <div><span class="afield"><span style="font-size:11px;color:var(--muted);font-weight:600">Calculated ratings</span></span><div id="f-ratings" style="border:1px solid var(--rule);border-radius:8px;padding:9px 11px;margin-top:4px;font-size:12px;color:var(--muted)">Enter the figures — risk &amp; timeframe are worked out automatically.</div></div>
         </div>
         <div class="frow" style="margin-top:9px">
@@ -406,7 +414,8 @@
     if(dl) dl.onclick=downloadDealPdf;
     if(m) m.addEventListener('click',function(e){ if(e.target===m) closePdfPreview(); });
   })();
-  (function(){ var MONEY=['f-price','f-legals','f-works','f-value','f-cur','f-aft','f-ins'];
+  (function(){ var t=$('#f-tenure'); if(!t) return; function tog(){ $('#lease-fields').style.display=(t.value==='leasehold')?'':'none'; } t.addEventListener('change',function(){ tog(); recompute(); }); tog(); })();
+  (function(){ var MONEY=['f-price','f-legals','f-works','f-value','f-cur','f-aft','f-ins','f-ground','f-svc'];
     function fmtEl(el){
       var raw=String(el.value).replace(/[^0-9.]/g,'');
       if(raw===''){ if(el.value!=='') el.value=''; return; }
@@ -905,19 +914,29 @@
     var worksR=price>0?works/price:0;
     var uplift=totalIn>0?(value-totalIn)/totalIn:0;
     var multiUnit=(cat==='apartments'||cat==='converted'||(UNITS&&UNITS.length>1));
+    var tenure=$('#f-tenure')?$('#f-tenure').value:'freehold';
+    var leaseYr=(tenure==='leasehold')?(n('f-ground')+n('f-svc')):0;
+
     var risk=1, rr=[];
-    if(worksR>=0.30){risk+=1.5; rr.push('Major refurbishment — works are '+Math.round(worksR*100)+'% of the purchase price, so delivery is the key risk.');}
-    else if(worksR>=0.15){risk+=1; rr.push('A meaningful refurbishment ('+Math.round(worksR*100)+'% of purchase price) — returns depend on the works completing to plan.');}
-    else if(worksR>=0.05){risk+=0.5; rr.push('Light works ('+Math.round(worksR*100)+'% of purchase price) — limited construction risk.');}
+    if(worksR>=0.50){risk+=1.5; rr.push('A major structural project — works are '+Math.round(worksR*100)+'% of the purchase price, so delivery is the key risk.');}
+    else if(worksR>=0.30){risk+=1; rr.push('A substantial refurbishment ('+Math.round(worksR*100)+'% of purchase price) — returns depend on the works completing to plan.');}
+    else if(worksR>=0.15){risk+=0.5; rr.push('A moderate refurbishment ('+Math.round(worksR*100)+'% of purchase price).');}
     else if(price>0){rr.push('Minimal works planned — little construction risk.');}
-    if(ltvP>75){risk+=1; rr.push('Higher leverage — refinancing at '+Math.round(ltvP)+'% of value.');}
+    if(ltvP>=80){risk+=1; rr.push('Higher leverage — refinancing at '+Math.round(ltvP)+'% of value.');}
     else if(ltvP>70){risk+=0.5; rr.push('Moderately geared — '+Math.round(ltvP)+'% loan-to-value at refinance.');}
     else if(value>0){rr.push('Conservative gearing — '+Math.round(ltvP)+'% loan-to-value at refinance.');}
     if(cur>0){ rr.push('Tenanted and earning from day one.'); }
-    else if(price>0){ risk+=1; rr.push('Vacant on purchase — no income until the property is let.'); }
-    if(uplift>=0.25){risk+=0.5; rr.push('The plan relies on a significant value uplift (~'+Math.round(uplift*100)+'%) being achieved.');}
+    else if(price>0 && worksR<0.15){ risk+=0.5; rr.push('Vacant on purchase without major works — letting is the first hurdle.'); }
+    else if(price>0){ rr.push('Vacant during the works — income starts once refurbished and let.'); }
+    if(uplift>=0.50){risk+=1; rr.push('The plan relies on a large value uplift (~'+Math.round(uplift*100)+'%) being achieved.');}
+    else if(uplift>=0.30){risk+=0.5; rr.push('The plan relies on a meaningful value uplift (~'+Math.round(uplift*100)+'%) being achieved.');}
+    var mgmtEff=((n('f-mgmt')||0)/100)*($('#f-vat').value==='1'?1.2:1);
+    var aftYr=n('f-aft')*($('#f-aft-u').value==='12'?12:1);
+    var refiNetChk=aftYr>0?(aftYr*(1-mgmtEff)-n('f-ins')-leaseYr-(loan*((n('f-rate')||0)/100))-((n('f-plat')||0)/100*totalIn)):0;
+    if(aftYr>0 && refiNetChk<=0){ risk+=1; rr.push('After refinancing, projected income does not cover costs and interest — a stretched plan.'); }
     if(!residential && price>0){ risk+=0.5; rr.push('Commercial-style property — void periods can run longer than residential.'); }
     if(multiUnit){ risk+=0.25; rr.push('Multiple units — more moving parts, but income is spread across tenants.'); }
+    if(tenure==='leasehold'){ risk+=0.25; if($('#f-grfixed')&&$('#f-grfixed').value==='0'){ risk+=0.5; rr.push('Leasehold with an escalating / reviewed ground rent — costs can rise and it can affect resale.'); } else { rr.push('Leasehold with a fixed ground rent — ongoing charges are known and priced in.'); } }
     var riskScore=Math.max(1,Math.min(5,Math.round(risk)));
     var time=1, tr=[];
     if(loanmo<=6){ tr.push('A fast plan — refinance targeted around month '+loanmo+'.'); }
@@ -954,14 +973,16 @@
   }
   var REQUIRED=['f-name','f-desc','f-price','f-legals','f-works','f-value','f-ltv','f-rate','f-loanfee','f-cur','f-aft','f-mgmt','f-ins','f-shares'];
   function validate(){
-    var ok=REQUIRED.every(function(id){ var el=$('#'+id); return el && String(el.value).trim()!==''; });
+    var req=REQUIRED.slice(); if($('#f-tenure')&&$('#f-tenure').value==='leasehold'){ req.push('f-ground','f-svc'); }
+    var ok=req.every(function(id){ var el=$('#'+id); return el && String(el.value).trim()!==''; });
     var btn=$('#publish'); if(btn){ btn.disabled=false; btn.style.opacity=ok?'1':'0.6'; btn.style.cursor='pointer'; }
     if(ok){ var pd=$('#pub-done'); if(pd && pd.textContent.indexOf('Fill these')>-1){ pd.style.display='none'; } }
     return ok;
   }
   function fieldLabel(id){ var el=$('#'+id); if(!el) return id; var lab=el.closest('label'); var sp=lab?lab.querySelector('span'):null; var t=sp?sp.textContent.trim():''; return t&&t!=='£'&&t!=='%'?t:id.replace('f-',''); }
   function showMissing(){
-    var missing=REQUIRED.filter(function(id){ var el=$('#'+id); return !el || String(el.value).trim()===''; });
+    var req2=REQUIRED.slice(); if($('#f-tenure')&&$('#f-tenure').value==='leasehold'){ req2.push('f-ground','f-svc'); }
+    var missing=req2.filter(function(id){ var el=$('#'+id); return !el || String(el.value).trim()===''; });
     var names=[];
     missing.forEach(function(id,ix){
       var el=$('#'+id); if(!el) return;
@@ -980,14 +1001,16 @@
     var cur=n('f-cur')*parseFloat($('#f-cur-u').value),aft=n('f-aft')*parseFloat($('#f-aft-u').value);
     var mgmt=n('f-mgmt'),vat=parseFloat($('#f-vat').value),ins=n('f-ins'),plat=n('f-plat'),shares=n('f-shares')||1;
     var totalIn=price+sdlt+legals+works, sharePrice=totalIn/shares, loan=value*ltv/100, loanFees=loan*loanFee/100, netReleased=loan-loanFees;
+    var tenure=$('#f-tenure')?$('#f-tenure').value:'freehold';
+    var leaseYr=(tenure==='leasehold')?(n('f-ground')+n('f-svc')):0;
     var capBack=totalIn>0?netReleased/totalIn:0, leftIn=totalIn-netReleased, mgmtEff=mgmt/100*(vat?1.2:1);
-    var dayNet=cur*(1-mgmtEff)-ins-totalIn*plat/100, dayYield=totalIn>0?dayNet/totalIn:0;
-    var interest=loan*rate/100, refiNet=aft*(1-mgmtEff)-ins-interest-totalIn*plat/100, refiYield=leftIn>0?refiNet/leftIn:0, uplift=value-totalIn;
+    var dayNet=cur*(1-mgmtEff)-ins-leaseYr-totalIn*plat/100, dayYield=totalIn>0?dayNet/totalIn:0;
+    var interest=loan*rate/100, refiNet=aft*(1-mgmtEff)-ins-leaseYr-interest-totalIn*plat/100, refiYield=leftIn>0?refiNet/leftIn:0, uplift=value-totalIn;
     $('#o-share').textContent=gbp2(sharePrice); $('#o-shares').textContent=shares+' shares · min 1';
     $('#o-total').textContent=gbp(totalIn);
     $('#o-capback').textContent=pct(capBack); $('#o-released').textContent=gbp(netReleased)+' released';
     $('#o-leftin').textContent=gbp(leftIn);
-    $('#o-dayy').textContent=pct(dayYield); $('#o-daynet').textContent=gbp(dayNet)+'/yr';
+    $('#o-dayy').textContent=pct(dayYield); $('#o-daynet').textContent=(cur===0&&totalIn>0)?(gbp(dayNet)+'/yr — vacant until let'):(gbp(dayNet)+'/yr');
     $('#o-refiy').textContent=pct(refiYield); $('#o-refinet').textContent=gbp(refiNet)+'/yr';
     $('#o-uplift').textContent=gbp(uplift);
     $('#o-psback').textContent=gbp(netReleased/shares); $('#o-psleft').textContent=gbp(leftIn/shares)+' left in';
@@ -1021,9 +1044,11 @@
     var cur=n('f-cur')*parseFloat($('#f-cur-u').value), aft=n('f-aft')*parseFloat($('#f-aft-u').value);
     var mgmt=n('f-mgmt'),vat=parseFloat($('#f-vat').value),ins=n('f-ins'),plat=n('f-plat'),shares=n('f-shares')||1;
     var totalIn=price+sdlt+legals+works, sharePrice=totalIn/shares, loan=value*ltv/100, loanFees=loan*loanFee/100, netReleased=loan-loanFees;
+    var tenure=$('#f-tenure')?$('#f-tenure').value:'freehold';
+    var leaseYr=(tenure==='leasehold')?(n('f-ground')+n('f-svc')):0;
     var capBack=totalIn>0?netReleased/totalIn:0, leftIn=totalIn-netReleased, mgmtEff=mgmt/100*(vat?1.2:1);
-    var dayNet=cur*(1-mgmtEff)-ins-totalIn*plat/100, dayYield=totalIn>0?dayNet/totalIn:0;
-    var interest=loan*rate/100, refiNet=aft*(1-mgmtEff)-ins-interest-totalIn*plat/100, refiYield=leftIn>0?refiNet/leftIn:0;
+    var dayNet=cur*(1-mgmtEff)-ins-leaseYr-totalIn*plat/100, dayYield=totalIn>0?dayNet/totalIn:0;
+    var interest=loan*rate/100, refiNet=aft*(1-mgmtEff)-ins-leaseYr-interest-totalIn*plat/100, refiYield=leftIn>0?refiNet/leftIn:0;
     var gbpr=function(v){return '£'+Math.round(v).toLocaleString('en-GB');}, pctS=function(v){return (v*100).toFixed(1)+'%';};
     var typeV=$('#f-type').value, catSel=$('#f-cat'), catLabel=catSel.options[catSel.selectedIndex]?catSel.options[catSel.selectedIndex].text:'';
     var RT=computeRatings();
@@ -1034,7 +1059,7 @@
     var grad=risk==='low'?'linear-gradient(135deg,#3F7A5C,#2C5D6B)':risk==='medium'?'linear-gradient(135deg,#2C5D6B,#14302E)':'linear-gradient(135deg,#B5532E,#8a4424)';
     var reasons = RT.reasons.map(function(r){ return '• '+r; });
     var cd={}; $('#cat-detail').querySelectorAll('input,select').forEach(function(el){ if(el.id) cd[el.id]=el.value; });
-    var raw={ name:$('#f-name').value, desc:$('#f-desc').value, type:typeV, cat:$('#f-cat').value, price:n('f-price'), legals:n('f-legals'), works:n('f-works'), value:n('f-value'), ltv:n('f-ltv'), rate:n('f-rate'), loanFee:n('f-loanfee'), cur:n('f-cur'), curU:$('#f-cur-u').value, aft:n('f-aft'), aftU:$('#f-aft-u').value, mgmt:n('f-mgmt'), vat:$('#f-vat').value, ins:n('f-ins'), plat:n('f-plat'), shares:n('f-shares'), minShares:n('f-minshares'), coinv:n('f-coinv'), loanmo:n('f-loanmo'), close:$('#f-close').value, risk:bRisk, cd:cd, units:(UNITS||[]).slice(), photos:PHOTOS.slice() };
+    var raw={ name:$('#f-name').value, desc:$('#f-desc').value, type:typeV, cat:$('#f-cat').value, price:n('f-price'), legals:n('f-legals'), works:n('f-works'), value:n('f-value'), ltv:n('f-ltv'), rate:n('f-rate'), loanFee:n('f-loanfee'), cur:n('f-cur'), curU:$('#f-cur-u').value, aft:n('f-aft'), aftU:$('#f-aft-u').value, mgmt:n('f-mgmt'), vat:$('#f-vat').value, ins:n('f-ins'), plat:n('f-plat'), shares:n('f-shares'), minShares:n('f-minshares'), coinv:n('f-coinv'), loanmo:n('f-loanmo'), close:$('#f-close').value, risk:bRisk, tenure:tenure, ground:n('f-ground'), svc:n('f-svc'), grfixed:($('#f-grfixed')?$('#f-grfixed').value:'1'), cd:cd, units:(UNITS||[]).slice(), photos:PHOTOS.slice() };
     return {
       id: EDIT_ID || ('pub_'+Date.now()),
       publishedAt: (EDIT_DEAL && EDIT_DEAL.publishedAt) || Date.now(),
@@ -1051,9 +1076,9 @@
       loanMonths:'By month '+loanmo,
       per:{ cashout:netReleased/shares, leftIn:leftIn/shares, day:dayNet/shares, refi:refiNet/shares, total5:(netReleased/shares)+(leftIn/shares)+(refiNet/shares*5) },
       reasons:reasons,
-      breakdown:[['Purchase price',gbpr(price)],['SDLT',gbpr(sdlt)],['Legals',gbpr(legals)],['Works',gbpr(works)],['Total raised',gbpr(totalIn)],['Value after works',gbpr(value)],['Refinance loan',gbpr(loan)],['Income (stabilised)',gbpr(aft)+' / yr']],
-      stmt:{ rentMo: aft/12, insYr: ins, intYr: interest },
-      details: propDetails()
+      breakdown:[['Purchase price',gbpr(price)],['SDLT',gbpr(sdlt)],['Legals',gbpr(legals)],['Works',gbpr(works)],['Total raised',gbpr(totalIn)],['Value after works',gbpr(value)],['Refinance loan',gbpr(loan)],['Income (stabilised)',gbpr(aft)+' / yr'],['Tenure',tenure==='leasehold'?'Leasehold':'Freehold']].concat(tenure==='leasehold'?[['Ground rent',gbpr(n('f-ground'))+' / yr'+(($('#f-grfixed')&&$('#f-grfixed').value==='0')?' (escalating)':' (fixed)')],['Service charge',gbpr(n('f-svc'))+' / yr']]:[]),
+      stmt:{ rentMo: aft/12, insYr: ins, intYr: interest ,leaseYr:leaseYr},
+      details: [['Tenure', tenure==='leasehold'?'Leasehold':'Freehold']].concat(propDetails())
     };
   }
   function reconstructRaw(d){
@@ -1074,7 +1099,7 @@
       price:price, legals:legals, works:works, value:value, ltv:ltv, rate:rate, loanFee:loanFee,
       cur:cur, curU:'1', aft:aft, aftU:'1', mgmt:10, vat:'0', ins:ins, plat:0,
       shares:shares, minShares:d.minShares||1, coinv:25, loanmo:10, close:closeStr,
-      risk:d.risk||'low', cd:{}, units:[], photos:(d.photos||[]).slice(), _recon:true };
+      risk:d.risk||'low', tenure:'freehold', ground:0, svc:0, grfixed:'1', cd:{}, units:[], photos:(d.photos||[]).slice(), _recon:true };
   }
   function populateForm(d){
     var r=d.raw;
@@ -1091,6 +1116,8 @@
     PHOTOS=((r.photos&&r.photos.length)?r.photos:(d.photos||[])).slice(); renderPhotos();
     [['f-price',r.price],['f-legals',r.legals],['f-works',r.works],['f-value',r.value],['f-ltv',r.ltv],['f-rate',r.rate],['f-loanfee',r.loanFee],['f-cur',r.cur],['f-aft',r.aft],['f-mgmt',r.mgmt],['f-ins',r.ins],['f-plat',r.plat],['f-shares',r.shares],['f-minshares',r.minShares],['f-coinv',r.coinv],['f-loanmo',r.loanmo]].forEach(function(p){ var el=$('#'+p[0]); if(el && p[1]!=null && p[1]!=='') el.value=p[1]; });
     if(r.curU){ $('#f-cur-u').value=r.curU; } if(r.aftU){ $('#f-aft-u').value=r.aftU; } if(r.vat){ $('#f-vat').value=r.vat; }
+    $('#f-tenure').value=r.tenure||'freehold'; $('#lease-fields').style.display=(r.tenure==='leasehold')?'':'none';
+    if(r.tenure==='leasehold'){ $('#f-ground').value=r.ground||0; $('#f-svc').value=r.svc||0; $('#f-grfixed').value=(r.grfixed!=null?String(r.grfixed):'1'); } else { $('#f-ground').value=''; $('#f-svc').value=''; $('#f-grfixed').value='1'; }
     if(r.close){ $('#f-close').value=r.close; }
     bRisk=r.risk||'low';
     if(window._fmtMoneyAll) window._fmtMoneyAll();
@@ -1100,9 +1127,10 @@
   function clearForm(){
     EDIT_ID=null; EDIT_DEAL=null; PHOTOS=[]; renderPhotos(); $('#publish').textContent='Publish investment';
     var banner=$('#edit-banner'); if(banner) banner.style.display='none';
-    ['f-name','f-desc','f-price','f-legals','f-works','f-value','f-cur','f-aft','f-ins','f-shares','f-minshares','f-sdlt','f-plat'].forEach(function(id){ var el=$('#'+id); if(el) el.value=''; });
+    ['f-name','f-desc','f-price','f-legals','f-works','f-value','f-cur','f-aft','f-ins','f-shares','f-minshares','f-sdlt','f-plat','f-ground','f-svc'].forEach(function(id){ var el=$('#'+id); if(el) el.value=''; });
     $('#f-ltv').value='70'; $('#f-rate').value='5.5'; $('#f-loanfee').value='2'; $('#f-mgmt').value='10'; $('#f-coinv').value='25'; $('#f-loanmo').value='10';
     $('#f-type').value='residential'; $('#f-vat').value='1'; $('#f-cur-u').value='12'; $('#f-aft-u').value='12';
+    $('#f-tenure').value='freehold'; $('#f-grfixed').value='1'; $('#f-ground').value=''; $('#f-svc').value=''; $('#lease-fields').style.display='none';
     var dd2=new Date(Date.now()+9*86400000); $('#f-close').value=dd2.toISOString().slice(0,10);
     bRisk='low';
     UNITS=[]; if(typeof populateCats==='function') populateCats('residential');

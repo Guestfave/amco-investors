@@ -965,8 +965,8 @@
   var STMT={};
   function statement(h){
     var d=byId[h.id], s=STMT[h.id], frac=h.shares/d.sharesTotal;
-    var gross=s.rentMo*frac, mgmt=gross*0.12, ins=(s.insYr/12)*frac, intr=(h.stage>=2?(s.intYr/12)*frac:0);
-    return { gross:gross, mgmt:mgmt, ins:ins, intr:intr, net:gross-mgmt-ins-intr, hasLoan:h.stage>=2 };
+    var gross=s.rentMo*frac, mgmt=gross*0.12, ins=(s.insYr/12)*frac, intr=(h.stage>=2?(s.intYr/12)*frac:0), lease=((s.leaseYr||0)/12)*frac;
+    return { gross:gross, mgmt:mgmt, ins:ins, intr:intr, lease:lease, net:gross-mgmt-ins-lease-intr, hasLoan:h.stage>=2 };
   }
   function renderPortfolio(){
     root.querySelector('#pf-greet').textContent = state.name ? ('Welcome back, '+state.name.split(' ')[0]) : 'Your portfolio';
@@ -1003,6 +1003,7 @@
             '<div class="kv"><span>Your rent share</span><b>'+f2(st.gross)+'</b></div>'+
             '<div class="kv"><span>− Management (10% +VAT)</span><b>−'+f2(st.mgmt)+'</b></div>'+
             '<div class="kv"><span>− Insurance</span><b>−'+f2(st.ins)+'</b></div>'+
+            (st.lease>0?'<div class="kv"><span>− Ground rent &amp; service charge</span><b>−'+f2(st.lease)+'</b></div>':'')+
             (st.hasLoan?'<div class="kv"><span>− Mortgage interest</span><b>−'+f2(st.intr)+'</b></div>':'<div class="kv"><span>Mortgage interest</span><b style="color:var(--muted)">— pre-refinance</b></div>')+
             '<div class="kv net"><span>Net income to you</span><b>'+f2(st.net)+'</b></div>'+
           '</div>'+
