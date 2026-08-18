@@ -1170,7 +1170,7 @@
       var loan=value*((r.ltv||70)/100), fees=loan*((r.loanFee||0)/100), rel=loan-fees;
       var interest=loan*(((r.rate||0)+rateAdd)/100);
       var refiNet=aftYr*(1-mgmtEff)-(r.ins||0)-lease-interest-plat;
-      var dayNet=curYr*(1-mgmtEff)-(r.ins||0)-lease-plat;
+      var dayNet=curYr>0?(curYr*(1-mgmtEff)-(r.ins||0)-lease-plat):0;
       var mo=(r.loanmo||10)+slipMo;
       var y1=dayNet*Math.min(12,mo)/12 + refiNet*Math.max(0,12-mo)/12;
       return { back:Math.min(rel,totalIn)*frac, refi:refiNet*frac, y1:y1*frac, mo:mo };
