@@ -114,6 +114,8 @@
     #amco-admin .mgrid,#amco-admin .qstrip{ grid-template-columns:repeat(2,1fr); }
   }
 
+  /* ===== RATINGS OFF ===== */
+  #amco-admin .risk, #amco-admin #f-ratings, #amco-admin .rt-wrap{ display:none !important; }
   /* ===== POLISH LAYER ===== */
   #amco-admin ::selection{ background:#FCDCDB; }
   #amco-admin .btn{ transition:background .15s ease, transform .1s ease; }
@@ -253,7 +255,7 @@
             </div>
             <label class="afield"><span>Ground rent fixed?</span><div class="ig"><select id="f-grfixed" style="width:100%"><option value="1">Fixed (or peppercorn)</option><option value="0">Escalating / reviewed</option></select></div></label>
           </div>
-          <div><span class="afield"><span style="font-size:11px;color:var(--muted);font-weight:600">Calculated ratings</span></span><div id="f-ratings" style="border:1px solid var(--rule);border-radius:8px;padding:9px 11px;margin-top:4px;font-size:12px;color:var(--muted)">Enter the figures — risk &amp; timeframe are worked out automatically.</div></div>
+          <div class="rt-wrap"><span class="afield"><span style="font-size:11px;color:var(--muted);font-weight:600">Calculated ratings</span></span><div id="f-ratings" style="border:1px solid var(--rule);border-radius:8px;padding:9px 11px;margin-top:4px;font-size:12px;color:var(--muted)">Enter the figures — risk &amp; timeframe are worked out automatically.</div></div>
         </div>
         <div class="frow" style="margin-top:9px">
           <label class="afield"><span>Property category</span><div class="ig"><select id="f-cat" style="width:100%"></select></div></label>
@@ -293,6 +295,11 @@
           <label class="afield"><span>VAT on mgmt</span><div class="ig"><select id="f-vat" style="width:100%"><option value="1">Yes (+20%)</option><option value="0">No</option></select></div></label>
           <label class="afield"><span>Insurance</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-ins" value="" placeholder="0"><span class="pre">/yr</span></div></label>
           <label class="afield"><span>Platform fee</span><div class="ig"><input class="tnum num" id="f-plat" value="0"><span class="pre">%/yr</span></div></label>
+          <label class="afield"><span>Voids &amp; maintenance</span><div class="ig"><input class="tnum num" id="f-voids" value="8"><span class="pre">% rent</span></div></label>
+          <label class="afield"><span>SPV running costs</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-spvadmin" value="1,200"><span class="pre">/yr</span></div></label>
+          <label class="afield"><span>Licensing</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-lic" value="0"><span class="pre">/yr</span></div></label>
+          <label class="afield"><span>Cash float in SPV</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-float" value="4,000"></div></label>
+          <label class="afield"><span>Amco sourcing fee</span><div class="ig"><span class="pre">£</span><input class="tnum num" id="f-source" value="0"></div></label>
         </div>
         <div class="sec">Shares &amp; timing</div>
         <div class="frow">
@@ -624,6 +631,44 @@
       ? '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;margin-bottom:6px">Update history</div>'+ups.map(function(u){ var sm=stageMeta(u.stage); var dt=new Date(u.at); return '<div style="border-bottom:1px solid var(--rule);padding:8px 0"><div style="font-size:11px;color:var(--clay);font-weight:700">'+sm.label+' · '+dt.toLocaleDateString('en-GB')+'</div><div style="font-size:12.5px;margin-top:2px">'+escr(u.text)+'</div></div>'; }).join('')
       : '<div style="font-size:12px;color:var(--muted)">No updates posted yet.</div>';
   }
+  function buildSimpleSheet(d){
+    var logo=(root.querySelector('.blogo')||{}).src||'';
+    var p=d.per||{}, rw=d.raw||{}, st=d.stmt||{};
+    var shares=d.sharesTotal||1, sp=d.sharePrice||0, totalIn=sp*shares;
+    var loanmo=rw.loanmo||10, works=rw.works!=null?rw.works:null, price=rw.price!=null?rw.price:null, value=rw.value!=null?rw.value:null;
+    var vacant=(st.curYr!=null)?(st.curYr===0):((p.day||0)<=0);
+    var today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    var step=function(n,txt){ return '<div style="display:flex;gap:12px;margin-bottom:12px"><div style="flex:0 0 26px;height:26px;border-radius:99px;background:#ED1D24;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;font-family:\'Space Grotesk\',sans-serif">'+n+'</div><div style="font-size:13px;line-height:1.6;color:#333;padding-top:2px">'+txt+'</div></div>'; };
+    var steps='';
+    steps+=step(1,'A group of investors buys this property together'+(price!=null?' for <b>'+gbp(price)+'</b>':'')+'. With buying costs'+(works?' and a repair budget':'')+', the total raised is <b>'+gbp(totalIn)+'</b>, split into '+shares+' equal shares of <b>'+gbp(sp)+'</b> each.');
+    steps+=step(2, works? ('We spend <b>'+gbp(works)+'</b> improving the property so it is worth more and earns more rent.') : 'The property is ready to rent as it is.');
+    steps+=step(3,'Once the work is done, a bank lends money against the improved property'+(value!=null?' (valued at about <b>'+gbp(value)+'</b>)':'')+'. That loan money is paid back to investors: about <b>'+gbp(p.cashout||0)+'</b> of every '+gbp(sp)+' share, expected around <b>month '+loanmo+'</b>.');
+    steps+=step(4,'From then on, the rent pays investors about <b>'+gbp(p.refi||0)+' per share each year</b>, after all running costs and the loan interest. About <b>'+gbp(p.leftIn||0)+'</b> of each share stays invested in the property.');
+    return '<div style="font-family:Inter,system-ui,sans-serif;color:#333;background:#fff;padding:40px 44px;width:760px;box-sizing:border-box">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #ED1D24;padding-bottom:14px">'+
+        '<div style="display:flex;align-items:center;gap:10px">'+(logo?'<img src="'+logo+'" style="height:34px;width:34px">':'')+'<div style="font-family:\'Space Grotesk\',sans-serif;font-weight:700;font-size:22px">amco<span style="color:#ED1D24"> investors</span></div></div>'+
+        '<div style="text-align:right"><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#5C6A64;font-weight:700">The short version</div><div style="font-size:11px;color:#5C6A64">'+today+'</div></div>'+
+      '</div>'+
+      '<div style="background:#3A3A3A;color:#fff;border-radius:10px;padding:11px 14px;font-size:11.5px;line-height:1.5;margin-top:14px"><b>Don\u2019t invest unless you\u2019re prepared to lose all the money you invest.</b> This is a high-risk investment and you should not expect to be protected if something goes wrong.</div>'+
+      '<div style="font-family:\'Space Grotesk\',sans-serif;font-size:26px;font-weight:800;line-height:1.1;margin-top:16px">'+escr(d.title||'Investment')+'</div>'+
+      (d.loc?'<div style="font-size:12.5px;color:#5C6A64;margin-top:4px">'+escr(d.tag||d.loc)+'</div>':'')+
+      (d.photos&&d.photos[0]?'<img src="'+d.photos[0]+'" crossorigin="anonymous" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-top:14px;display:block">':'')+
+      '<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#333;margin:20px 0 12px">How it works, in one minute</div>'+steps+
+      '<div style="border:1px solid #E6E3DF;border-radius:12px;padding:14px 16px;margin-top:16px;background:#FAF9F7">'+
+        '<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#ED1D24;margin-bottom:8px">If you bought one share</div>'+
+        '<div style="font-size:13px;line-height:1.8;color:#333">You put in <b>'+gbp(sp)+'</b> now. '+(vacant?'The property is empty when bought, so no rent is paid out until it has been done up and let. ':'')+'Around month '+loanmo+', roughly <b>'+gbp(p.cashout||0)+'</b> is expected back in your pocket, while <b>'+gbp(p.leftIn||0)+'</b> stays invested. After that, the rent is expected to pay you about <b>'+gbp(p.refi||0)+' a year</b> for as long as you hold the share \u2014 and you still own your full share of the property.</div>'+
+      '</div>'+
+      '<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#333;margin:20px 0 8px">Things to know before you decide</div>'+
+      '<ul style="margin:0;padding-left:18px;font-size:12px;color:#5C6A64;line-height:1.7">'+
+        '<li>These numbers are careful estimates, not promises. Rents, costs, values and timings can all turn out worse.</li>'+
+        '<li>You could lose some or all of the money you put in.</li>'+
+        '<li>Your shares are not easy to sell. Treat this as money you will not need for years.</li>'+
+        '<li>The bank lending step depends on the property being valued as expected. If it is valued lower, less money comes back and later.</li>'+
+      '</ul>'+
+      '<div style="margin-top:24px;border-top:1px solid #E6E3DF;padding-top:12px;font-size:9.5px;color:#5C6A64;line-height:1.55">This is the short version. A full deal sheet with every figure, cost and assumption is available \u2014 ask us for it, and we will happily walk you through it. This document is for information only and is not financial advice.</div>'+
+    '</div>';
+  }
+  var SHOW_RATINGS=false; /* RATINGS OFF: pending recalibration */
   function buildDealSheet(d){
     var logo=(root.querySelector('.blogo')||{}).src||'';
     var p=d.per||{}; var minInv=(d.minShares||1)*(d.sharePrice||0);
@@ -643,6 +688,8 @@
         line('Rent after works',mo(st.aftYr||0))+
         line('Management fee ('+mgmtPct+')','− '+gbp(mgmtAft)+' / yr')+
         line('Insurance','− '+gbp(st.insYr||0)+' / yr')+
+        ((st.voidsYr||0)>0? line('Voids & maintenance allowance ('+(rw.voids||0)+'%)','− '+gbp(st.voidsYr)+' / yr') : '')+
+        ((st.spvAdmin||0)>0? line('SPV running costs & filings','− '+gbp(st.spvAdmin)+' / yr') : '')+
         ((st.leaseYr||0)>0? line('Ground rent & service charge','− '+gbp(st.leaseYr)+' / yr') : '')+
         ((st.platYr||0)>0? line('Platform fee','− '+gbp(st.platYr)+' / yr') : '')+
         sub('Refinancing it')+
@@ -653,8 +700,10 @@
         sub('What is left')+
         line('Net income before refinance',(st.curYr||0)>0? mo(st.dayNet||0) : '£0 (vacant)')+
         line('Net income after refinance',mo(st.refiNet||0))+
-        line('Rent after refi covers interest',(st.intYr>0? pctFmt(((st.aftYr||0)*(1-(st.mgmtEff||0)))/st.intYr*100)+' cover' : '—'))+
-        line('Tenure',(rw.tenure==='leasehold'?'Leasehold':'Freehold'),false);
+        ((st.navShare||0)>0? line('Asset value per share, after works',gbp(st.navShare)+' vs '+gbp(d.sharePrice||0)+' paid') : '')+
+        line('Rent after refi covers interest',(st.intYr>0? pctFmt(((st.aftYr||0)*(1-(st.mgmtEff||0)-((rw.voids||0)/100)))/st.intYr*100)+' cover, after management and voids' : '—'))+
+        line('Tenure',(rw.tenure==='leasehold'?'Leasehold':'Freehold'),false)+
+        '<div style="font-size:10.5px;color:#5C6A64;margin-top:8px;line-height:1.5">A refinance is not an exit. Cash released at refinance is borrowed against the property; investors still hold their shares, still carry the risks, and no gain has been realised.</div>';
     }
     var perRows=[['Cash back at refinance',gbp(p.cashout||0)],['Money left in',gbp(p.leftIn||0)],['Income, day one',gbp(p.day||0)+' / yr'],['Income after refi',gbp(p.refi||0)+' / yr']];
     var rowsPer=perRows.map(function(r){return line(r[0],r[1]);}).join('');
@@ -673,7 +722,7 @@
       '<div style="background:#3A3A3A;color:#fff;border-radius:10px;padding:11px 14px;font-size:11.5px;line-height:1.5;margin-top:14px"><b>Don\u2019t invest unless you\u2019re prepared to lose all the money you invest.</b> This is a high-risk investment and you should not expect to be protected if something goes wrong.</div>'+
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-top:16px">'+
         '<div><div style="font-family:\'Space Grotesk\',sans-serif;font-size:26px;font-weight:800;line-height:1.1">'+escr(d.title||'Investment')+'</div><div style="font-size:12.5px;color:#5C6A64;margin-top:4px">'+escr(d.tag||d.loc||'')+'</div></div>'+
-        '<div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:6px 12px;border-radius:999px;background:#FCE9E8;color:#ED1D24;white-space:nowrap">'+(d.riskScore?('Risk '+d.riskScore+'/5 · Time '+(d.timeScore||3)+'/5'):(capr(d.risk)+' risk'))+'</div>'+
+        (SHOW_RATINGS?('<div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:6px 12px;border-radius:999px;background:#FCE9E8;color:#ED1D24;white-space:nowrap">'+(d.riskScore?('Risk '+d.riskScore+'/5 · Time '+(d.timeScore||3)+'/5'):(capr(d.risk)+' risk'))+'</div>'):'')+
       '</div>'+
       (d.photos&&d.photos[0]?'<img src="'+d.photos[0]+'" crossorigin="anonymous" style="width:100%;height:220px;object-fit:cover;border-radius:12px;margin-top:16px;display:block">':'')+
       (d.desc?'<div style="font-size:13px;color:#333;margin-top:12px;line-height:1.5">'+escr(d.desc)+'</div>':'')+
@@ -688,8 +737,8 @@
         '<div style="flex:1">'+head('The deal in full')+rowsBrk+'</div>'+
         '<div style="flex:1">'+head('Per share')+rowsPer+'<div style="height:14px"></div>'+head('Property details')+det+'</div>'+
       '</div>'+
-      (reasons?'<div style="margin-top:22px">'+head('Why this risk rating'+(d.riskScore?' — '+d.riskScore+'/5':''))+'<ul style="margin:0;padding-left:18px;font-size:12px;color:#5C6A64">'+reasons+'</ul></div>':'')+
-      ((d.timeReasons&&d.timeReasons.length)?'<div style="margin-top:14px">'+head('Timeframe — '+(d.timeScore||3)+'/5')+'<ul style="margin:0;padding-left:18px;font-size:12px;color:#5C6A64">'+d.timeReasons.map(function(r){return '<li style="margin-bottom:5px">'+escr(deb(r))+'</li>';}).join('')+'</ul></div>':'')+
+      (SHOW_RATINGS&&reasons?'<div style="margin-top:22px">'+head('Why this risk rating'+(d.riskScore?' — '+d.riskScore+'/5':''))+'<ul style="margin:0;padding-left:18px;font-size:12px;color:#5C6A64">'+reasons+'</ul></div>':'')+
+      ((SHOW_RATINGS&&d.timeReasons&&d.timeReasons.length)?'<div style="margin-top:14px">'+head('Timeframe — '+(d.timeScore||3)+'/5')+'<ul style="margin:0;padding-left:18px;font-size:12px;color:#5C6A64">'+d.timeReasons.map(function(r){return '<li style="margin-bottom:5px">'+escr(deb(r))+'</li>';}).join('')+'</ul></div>':'')+
       '<div style="margin-top:26px;border-top:1px solid #E6E3DF;padding-top:12px;font-size:9.5px;color:#5C6A64;line-height:1.55">This document is for information only and is not financial advice. Projected figures are illustrative and not guaranteed. Property prices and rents can fall as well as rise, and you could lose all the money you invest. Whether this document constitutes a financial promotion, and the approvals it requires, is under review with our compliance adviser (OI-002, OI-006). Amco Investors co-invests 25% in every deal.</div>'+
     '</div>';
   }
@@ -701,10 +750,10 @@
     });
     return window._pdflibs;
   }
-  function openPdfPreview(d){
+  function openPdfPreview(d,simple){
     var modal=$('#pdf-modal'), sheet=$('#pdf-sheet');
-    sheet.innerHTML=buildDealSheet(d);
-    modal.dataset.fname='amco-'+String(d.title||'deal').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase();
+    sheet.innerHTML=simple?buildSimpleSheet(d):buildDealSheet(d);
+    modal.dataset.fname='amco-'+String(d.title||'deal').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()+(simple?'-summary':'');
     modal.style.display='flex';
     var avail=Math.min(800, window.innerWidth-48), sv=Math.min(1, avail/760);
     var scale=$('#pdf-scale'); scale.style.transform='scale('+sv+')';
@@ -739,7 +788,8 @@
     var actions = d.archived
       ? '<button class="btn btn-ghost" id="pd2-restore" style="font-size:12.5px">Restore</button><button class="btn" id="pd2-delete" style="font-size:12.5px;background:var(--danger);border-color:var(--danger)">Delete permanently</button>'
       : '<button class="btn" id="pd2-edit" style="font-size:12.5px">Edit deal</button><button class="btn btn-ghost" id="pd2-archive" style="font-size:12.5px">Archive</button>';
-    actions += '<button class="btn btn-ghost" id="pd2-pdf" style="font-size:12.5px">⬇ Download as PDF</button>';
+    actions += '<button class="btn btn-ghost" id="pd2-pdf" style="font-size:12.5px">⬇ Full deal sheet (PDF)</button>';
+    actions += '<button class="btn btn-ghost" id="pd2-pdfsimple" style="font-size:12.5px">⬇ Simple summary (PDF)</button>';
     var stepper='<div style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 14px">'+STAGES.map(function(s,i){ var done=i<=st.idx; return '<div title="'+s[2]+'" style="flex:1 1 auto;min-width:64px;text-align:center;padding:7px 5px;border-radius:8px;font-size:10px;font-weight:700;'+(done?'background:var(--clay);color:#fff':'background:#F1F0EE;color:var(--muted)')+'">'+s[1]+'</div>'; }).join('')+'</div>';
     var stageOpts=STAGES.map(function(s){ return '<option value="'+s[0]+'"'+(s[0]===st.key?' selected':'')+'>'+s[1]+'</option>'; }).join('');
     var html='<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'+
@@ -778,6 +828,7 @@
     Promise.resolve(DB.questions(d.id)).then(function(rows){ renderQAadmin($('#pd2-qa'),rows,d); });
     var ed=$('#pd2-edit'); if(ed) ed.onclick=function(){ populateForm(d); };
     var pf=$('#pd2-pdf'); if(pf) pf.onclick=function(){ openPdfPreview(d); };
+    var ps=$('#pd2-pdfsimple'); if(ps) ps.onclick=function(){ openPdfPreview(d,true); };
     var pu=$('#pd2-postupdate'); if(pu) pu.onclick=function(){
       var txt=($('#pd2-update').value||'').trim(), stg=$('#pd2-stage').value;
       if(!txt && stg===(d.stage||'funding')){ var done=$('#pd2-updatedone'); done.style.display='inline'; done.style.color='var(--muted)'; done.textContent='Write an update or change the stage first.'; return; }
@@ -1038,12 +1089,14 @@
     var typeV=$('#f-type').value, sdlt=sdltFor(price, typeV==='residential'); $('#f-sdlt').value = sdlt? sdlt.toLocaleString('en-GB') : '';
     var cur=n('f-cur')*parseFloat($('#f-cur-u').value),aft=n('f-aft')*parseFloat($('#f-aft-u').value);
     var mgmt=n('f-mgmt'),vat=parseFloat($('#f-vat').value),ins=n('f-ins'),plat=n('f-plat'),shares=n('f-shares')||1;
-    var totalIn=price+sdlt+legals+works, sharePrice=totalIn/shares, loan=value*ltv/100, loanFees=loan*loanFee/100, netReleased=loan-loanFees;
+    var floatC=n('f-float'), source=n('f-source'), voidsPct=n('f-voids'), spvAdmin=n('f-spvadmin'), lic=n('f-lic');
+    var totalIn=price+sdlt+legals+works+floatC+source, sharePrice=totalIn/shares, loan=value*ltv/100, loanFees=loan*loanFee/100, netReleased=loan-loanFees;
     var tenure=$('#f-tenure')?$('#f-tenure').value:'freehold';
     var leaseYr=(tenure==='leasehold')?(n('f-ground')+n('f-svc')):0;
     var capBack=totalIn>0?netReleased/totalIn:0, leftIn=totalIn-netReleased, mgmtEff=mgmt/100*(vat?1.2:1);
-    var vacantCosts=ins+leaseYr+totalIn*plat/100; var dayNet=(cur>0)?(cur*(1-mgmtEff)-vacantCosts):0, dayYield=totalIn>0?dayNet/totalIn:0;
-    var interest=loan*rate/100, refiNet=aft*(1-mgmtEff)-ins-leaseYr-interest-totalIn*plat/100, refiYield=leftIn>0?refiNet/leftIn:0, uplift=value-totalIn;
+    var fixedYr=ins+leaseYr+totalIn*plat/100+spvAdmin+lic; var vacantCosts=fixedYr;
+    var dayPre=(cur>0)?(cur*(1-mgmtEff-voidsPct/100)-fixedYr):0; var dayNet=dayPre, dayYield=totalIn>0?dayNet/totalIn:0;
+    var interest=loan*rate/100, refiPre=aft*(1-mgmtEff-voidsPct/100)-fixedYr-interest, refiNet=refiPre, refiYield=leftIn>0?refiNet/leftIn:0, uplift=value-totalIn;
     $('#o-share').textContent=gbp2(sharePrice); $('#o-shares').textContent=shares+' shares · min 1';
     $('#o-total').textContent=gbp(totalIn);
     $('#o-capback').textContent=pct(capBack); $('#o-released').textContent=gbp(netReleased)+' released';
@@ -1081,12 +1134,14 @@
     var value=n('f-value'),ltv=n('f-ltv'),rate=n('f-rate'),loanFee=n('f-loanfee');
     var cur=n('f-cur')*parseFloat($('#f-cur-u').value), aft=n('f-aft')*parseFloat($('#f-aft-u').value);
     var mgmt=n('f-mgmt'),vat=parseFloat($('#f-vat').value),ins=n('f-ins'),plat=n('f-plat'),shares=n('f-shares')||1;
-    var totalIn=price+sdlt+legals+works, sharePrice=totalIn/shares, loan=value*ltv/100, loanFees=loan*loanFee/100, netReleased=loan-loanFees;
+    var floatC=n('f-float'), source=n('f-source'), voidsPct=n('f-voids'), spvAdmin=n('f-spvadmin'), lic=n('f-lic');
+    var totalIn=price+sdlt+legals+works+floatC+source, sharePrice=totalIn/shares, loan=value*ltv/100, loanFees=loan*loanFee/100, netReleased=loan-loanFees;
     var tenure=$('#f-tenure')?$('#f-tenure').value:'freehold';
     var leaseYr=(tenure==='leasehold')?(n('f-ground')+n('f-svc')):0;
     var capBack=totalIn>0?netReleased/totalIn:0, leftIn=totalIn-netReleased, mgmtEff=mgmt/100*(vat?1.2:1);
-    var vacantCosts=ins+leaseYr+totalIn*plat/100; var dayNet=(cur>0)?(cur*(1-mgmtEff)-vacantCosts):0, dayYield=totalIn>0?dayNet/totalIn:0;
-    var interest=loan*rate/100, refiNet=aft*(1-mgmtEff)-ins-leaseYr-interest-totalIn*plat/100, refiYield=leftIn>0?refiNet/leftIn:0;
+    var fixedYr=ins+leaseYr+totalIn*plat/100+spvAdmin+lic; var vacantCosts=fixedYr;
+    var dayPre=(cur>0)?(cur*(1-mgmtEff-voidsPct/100)-fixedYr):0; var dayNet=dayPre, dayYield=totalIn>0?dayNet/totalIn:0;
+    var interest=loan*rate/100, refiPre=aft*(1-mgmtEff-voidsPct/100)-fixedYr-interest, refiNet=refiPre, refiYield=leftIn>0?refiNet/leftIn:0;
     var gbpr=function(v){return '£'+Math.round(v).toLocaleString('en-GB');}, pctS=function(v){return (v*100).toFixed(1)+'%';};
     var typeV=$('#f-type').value, catSel=$('#f-cat'), catLabel=catSel.options[catSel.selectedIndex]?catSel.options[catSel.selectedIndex].text:'';
     var RT=computeRatings();
@@ -1097,7 +1152,7 @@
     var grad=risk==='low'?'linear-gradient(135deg,#3F7A5C,#2C5D6B)':risk==='medium'?'linear-gradient(135deg,#2C5D6B,#14302E)':'linear-gradient(135deg,#B5532E,#8a4424)';
     var reasons = RT.reasons.map(function(r){ return '• '+r; });
     var cd={}; $('#cat-detail').querySelectorAll('input,select').forEach(function(el){ if(el.id) cd[el.id]=el.value; });
-    var raw={ name:$('#f-name').value, desc:$('#f-desc').value, type:typeV, cat:$('#f-cat').value, price:n('f-price'), legals:n('f-legals'), works:n('f-works'), value:n('f-value'), ltv:n('f-ltv'), rate:n('f-rate'), loanFee:n('f-loanfee'), cur:n('f-cur'), curU:$('#f-cur-u').value, aft:n('f-aft'), aftU:$('#f-aft-u').value, mgmt:n('f-mgmt'), vat:$('#f-vat').value, ins:n('f-ins'), plat:n('f-plat'), shares:n('f-shares'), minShares:n('f-minshares'), coinv:n('f-coinv'), loanmo:n('f-loanmo'), close:$('#f-close').value, risk:bRisk, tenure:tenure, ground:n('f-ground'), svc:n('f-svc'), grfixed:($('#f-grfixed')?$('#f-grfixed').value:'1'), cd:cd, units:(UNITS||[]).slice(), photos:PHOTOS.slice() };
+    var raw={ name:$('#f-name').value, desc:$('#f-desc').value, type:typeV, cat:$('#f-cat').value, price:n('f-price'), legals:n('f-legals'), works:n('f-works'), value:n('f-value'), ltv:n('f-ltv'), rate:n('f-rate'), loanFee:n('f-loanfee'), cur:n('f-cur'), curU:$('#f-cur-u').value, aft:n('f-aft'), aftU:$('#f-aft-u').value, mgmt:n('f-mgmt'), vat:$('#f-vat').value, ins:n('f-ins'), plat:n('f-plat'), voids:n('f-voids'), spvadmin:n('f-spvadmin'), lic:n('f-lic'), floatC:n('f-float'), source:n('f-source'), shares:n('f-shares'), minShares:n('f-minshares'), coinv:n('f-coinv'), loanmo:n('f-loanmo'), close:$('#f-close').value, risk:bRisk, tenure:tenure, ground:n('f-ground'), svc:n('f-svc'), grfixed:($('#f-grfixed')?$('#f-grfixed').value:'1'), cd:cd, units:(UNITS||[]).slice(), photos:PHOTOS.slice() };
     return {
       id: EDIT_ID || ('pub_'+Date.now()),
       publishedAt: (EDIT_DEAL && EDIT_DEAL.publishedAt) || Date.now(),
@@ -1114,8 +1169,8 @@
       loanMonths:'By month '+loanmo,
       per:{ cashout:netReleased/shares, leftIn:leftIn/shares, day:dayNet/shares, refi:refiNet/shares, total5:(netReleased/shares)+(leftIn/shares)+(refiNet/shares*5) },
       reasons:reasons,
-      breakdown:[['Purchase price',gbpr(price)],['SDLT',gbpr(sdlt)],['Legals',gbpr(legals)],['Works',gbpr(works)],['Total raised',gbpr(totalIn)],['Value after works',gbpr(value)],['Refinance loan',gbpr(loan)],['Income (stabilised)',gbpr(aft)+' / yr']].concat(cur>0?[]:[['Running costs while vacant',gbpr(vacantCosts)+' / yr']]).concat([['Tenure',tenure==='leasehold'?'Leasehold':'Freehold']].concat(tenure==='leasehold'?[['Ground rent',gbpr(n('f-ground'))+' / yr'+(($('#f-grfixed')&&$('#f-grfixed').value==='0')?' (escalating)':' (fixed)')],['Service charge',gbpr(n('f-svc'))+' / yr']]:[])),
-      stmt:{ rentMo: aft/12, insYr: ins, intYr: interest ,leaseYr:leaseYr, curYr:cur, aftYr:aft, mgmtEff:mgmtEff, platYr:totalIn*plat/100, loanFees:loanFees, netReleased:netReleased, sdlt:sdlt, dayNet:dayNet, refiNet:refiNet, vacantCosts:vacantCosts },
+      breakdown:[['Purchase price',gbpr(price)],['SDLT',gbpr(sdlt)],['Legals',gbpr(legals)],['Works',gbpr(works)]].concat(source>0?[['Amco sourcing fee',gbpr(source)]]:[]).concat(floatC>0?[['Cash float in SPV',gbpr(floatC)]]:[]).concat([['Total raised',gbpr(totalIn)],['Value after works',gbpr(value)],['Refinance loan',gbpr(loan)],['Income (stabilised)',gbpr(aft)+' / yr'],['Voids & maintenance allowance ('+voidsPct+'%)','\u2212 '+gbpr(aft*voidsPct/100)+' / yr'],['SPV running costs'+(lic>0?' & licensing':''),'\u2212 '+gbpr(spvAdmin+lic)+' / yr'],['Net income after refinance',gbpr(refiNet)+' / yr']].concat(cur>0?[]:[['Running costs while vacant',gbpr(vacantCosts)+' / yr']]).concat([['Tenure',tenure==='leasehold'?'Leasehold':'Freehold']].concat(tenure==='leasehold'?[['Ground rent',gbpr(n('f-ground'))+' / yr'+(($('#f-grfixed')&&$('#f-grfixed').value==='0')?' (escalating)':' (fixed)')],['Service charge',gbpr(n('f-svc'))+' / yr']]:[]))),
+      stmt:{ rentMo: aft/12, insYr: ins, intYr: interest ,leaseYr:leaseYr, curYr:cur, aftYr:aft, mgmtEff:mgmtEff, platYr:totalIn*plat/100, loanFees:loanFees, netReleased:netReleased, sdlt:sdlt, dayNet:dayNet, refiNet:refiNet, vacantCosts:vacantCosts, voidsYr:aft*voidsPct/100, spvAdmin:spvAdmin+lic, floatC:floatC, source:source, navShare:value/(shares||1), refiPre:refiPre, dayPre:dayPre },
       details: [['Tenure', tenure==='leasehold'?'Leasehold':'Freehold']].concat(propDetails())
     };
   }
