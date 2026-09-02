@@ -106,6 +106,10 @@
   #amco-app #inv-dot{ display:none; margin-left:5px; width:8px; height:8px; border-radius:99px; background:var(--clay); vertical-align:middle; }
   #amco-app #pf-dot{ display:none; margin-left:5px; width:8px; height:8px; border-radius:99px; background:var(--clay); vertical-align:middle; }
   #amco-app .replybadge{ display:inline-block; background:var(--sage); color:#fff; font-size:9.5px; font-weight:800; letter-spacing:0.04em; padding:2px 7px; border-radius:999px; vertical-align:middle; margin-left:6px; }
+  #amco-app .rwarn{ background:#3A3A3A; color:#fff; border-radius:12px; padding:12px 16px; font-size:12.5px; line-height:1.5; margin:0 0 16px; }
+  #amco-app .rwarn b{ color:#fff; }
+  #amco-app .rwarn a{ color:#FFD8D6; font-weight:700; text-decoration:underline; cursor:pointer; }
+  #amco-app .await{ display:inline-block; background:#FFF3D6; color:#8A6100; border:1px solid #E8CC8A; font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; letter-spacing:.02em; }
   #amco-app .updatebadge{ display:inline-block; background:var(--clay); color:#fff; font-size:9.5px; font-weight:800; letter-spacing:0.04em; padding:2px 7px; border-radius:999px; vertical-align:middle; margin-left:6px; animation:newpulse 1.5s ease-in-out infinite; }
   #amco-app .lcard .thumb{ position:relative; }
   #amco-app .newbadge{ position:absolute; top:10px; right:10px; background:var(--clay); color:#fff; font-size:10px; font-weight:800; letter-spacing:0.06em; padding:3px 9px; border-radius:999px; box-shadow:0 2px 8px rgba(237,29,36,0.45); animation:newpulse 1.5s ease-in-out infinite; }
@@ -192,6 +196,42 @@
     #amco-app .binput{ gap:10px; }
     #amco-app .bfield input{ width:120px; font-size:20px; }
   }
+
+  /* ===== RATINGS OFF: risk/time ratings hidden pending recalibration ===== */
+  #amco-app .risk, #amco-app .tbadge, #amco-app #d-risk, #amco-app #d-riskwhy, #amco-app #d-reasons{ display:none !important; }
+  #amco-app #d-riskwhy-card{ display:none !important; }
+  /* ===== POLISH LAYER: visual refinement only, no layout/JS changes ===== */
+  #amco-app{ --paper:#F6F4F0; --rule:#E4E1DA; --shadow-s:0 1px 2px rgba(24,30,28,0.04), 0 2px 8px rgba(24,30,28,0.03); --shadow-h:0 2px 4px rgba(24,30,28,0.05), 0 12px 28px rgba(24,30,28,0.09); }
+  #amco-app ::selection{ background:#FCDCDB; }
+  #amco-app .card, #amco-app .pcard, #amco-app .lcard{ box-shadow:var(--shadow-s); border-color:var(--rule); }
+  #amco-app .pcard:hover, #amco-app .lcard:hover{ box-shadow:var(--shadow-h); }
+  #amco-app .lcard:hover{ transform:translateY(-1px); } #amco-app .lcard{ transition:box-shadow .2s ease, transform .2s ease; }
+  #amco-app .btn{ transition:background .15s ease, transform .1s ease, box-shadow .15s ease; box-shadow:0 1px 2px rgba(237,29,36,0.18); }
+  #amco-app .btn:hover{ background:#C41219; border-color:#C41219; box-shadow:0 3px 10px rgba(196,18,25,0.25); }
+  #amco-app .btn:active{ transform:scale(0.985); }
+  #amco-app .btn-ink{ box-shadow:0 1px 2px rgba(24,30,28,0.15); } #amco-app .btn-ink:hover{ background:#171717; border-color:#171717; box-shadow:0 3px 10px rgba(0,0,0,0.2); }
+  #amco-app .btn-ghost{ box-shadow:none; } #amco-app .btn-ghost:hover{ background:var(--ink); color:#fff; }
+  #amco-app a, #amco-app button, #amco-app input, #amco-app select{ outline:none; }
+  #amco-app a:focus-visible, #amco-app button:focus-visible, #amco-app .btn:focus-visible{ outline:2px solid var(--teal); outline-offset:2px; border-radius:6px; }
+  #amco-app input:focus-visible, #amco-app select:focus-visible{ border-color:var(--clay); box-shadow:0 0 0 3px rgba(237,29,36,0.12); }
+  #amco-app .nav{ background:rgba(246,244,240,0.85); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+  #amco-app .navlinks a{ position:relative; padding-bottom:2px; transition:color .15s ease; }
+  #amco-app .navlinks a.active:after{ content:''; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%); width:5px; height:5px; border-radius:99px; background:var(--clay); }
+  #amco-app .hero h1{ letter-spacing:-0.028em; }
+  #amco-app .eyebrow{ letter-spacing:0.18em; }
+  #amco-app .bar{ background:#E9E6E0; } #amco-app .bar i{ background:linear-gradient(90deg,#3F7A5C,#579B77); border-radius:99px; transition:width .5s ease; }
+  #amco-app .obar .ofill{ background:linear-gradient(90deg,#ED1D24,#C41219); }
+  #amco-app .seg button{ transition:color .15s ease, background .15s ease; }
+  #amco-app .chip{ transition:box-shadow .15s ease, color .15s ease; }
+  #amco-app .thumb{ position:relative; }
+  #amco-app .thumb:after{ content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,0.28)); pointer-events:none; }
+  #amco-app .thumb .tag, #amco-app .newbadge{ z-index:1; }
+  #amco-app .side{ background:#FBFAF7; }
+  #amco-app .stat .v{ letter-spacing:-0.01em; }
+  #amco-app .rwarn{ background:#2E2E2E; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06); }
+  #amco-app .strip{ background:linear-gradient(120deg,#2A2A2A,#3A3A3A); }
+  #amco-app .stepn{ box-shadow:0 1px 3px rgba(0,0,0,0.18); }
+  @media (prefers-reduced-motion:reduce){ #amco-app *{ animation:none !important; transition:none !important; } }
 </style>
 
 <!-- NAV -->
@@ -214,7 +254,7 @@
 <div class="page" id="page-welcome">
   <div class="wrap" style="max-width:540px;text-align:center;padding-top:48px">
     <div class="eyebrow" style="color:var(--clay)">Welcome to Amco Investors</div>
-    <h1 class="disp" style="font-size:40px;margin:14px 0 12px">Property investment, opened up.</h1>
+    <h1 class="disp" style="font-size:40px;margin:14px 0 12px">Property investment, opened up<span style="color:var(--clay)">.</span></h1>
     <p class="lead" style="margin:0 auto 26px">Own a share of real, income-producing property from a single share. Create your free account to explore the live deals.</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <a class="btn" id="w-signup" style="padding:13px 26px">Create your account</a>
@@ -227,7 +267,7 @@
 <div class="page" id="page-home">
   <div class="wrap hero">
     <div class="eyebrow" style="color:var(--clay)">Accessible property investment</div>
-    <h1 class="disp">Property investment,<br>opened up.</h1>
+    <h1 class="disp">Property investment,<br>opened up<span style="color:var(--clay)">.</span></h1>
     <p class="lead">Own real bricks and mortar from a single share. We put our own money into every deal — and we show you the risks as plainly as the returns.</p>
     <div class="cta-row">
       <a class="btn" data-go="investments">Browse investments</a>
@@ -271,7 +311,7 @@
   <div class="wrap">
     <div class="hero" style="padding:42px 0 22px">
       <div class="eyebrow" style="color:var(--clay)">What we do here</div>
-      <h1 class="disp" style="font-size:38px;margin:12px 0 12px">How Amco works</h1>
+      <h1 class="disp" style="font-size:38px;margin:12px 0 12px">How Amco works<span style="color:var(--clay)">.</span></h1>
       <p class="lead">We make it possible to own a share of real property with a small amount of money — and we keep it honest at every step. Here's exactly how.</p>
     </div>
 
@@ -385,25 +425,42 @@
         <div class="prog" id="d-prog" style="margin:10px 0 12px"></div>
         <div class="closes" id="d-closes" style="margin-bottom:14px"></div>
         <a class="btn" style="width:100%" id="d-invest">Invest in this deal</a>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">Minimum one share. You reserve now; funds taken once the raise completes.</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center" id="d-minhead">You reserve now; no money is taken at this stage.</div>
       </div>
     </div>
 
     <div class="vid sm" style="margin-bottom:16px"><div class="vtag">Walkthrough</div><div class="play"></div><div class="vcap">▶ Watch a walkthrough of this deal</div></div>
 
+    <div class="card" id="d-own-card" style="margin-bottom:16px">
+      <h2>What you own and what happens if we fail</h2>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.6">
+        <div class="kv"><span>Legal structure</span><b><span class="await">Awaiting data · OI-004</span></b></div>
+        <div class="kv"><span>Registered proprietor</span><b><span class="await">Awaiting data · OI-004</span></b></div>
+        <div class="kv"><span>Independent custody or trustee</span><b><span class="await">Awaiting data · OI-017</span></b></div>
+        <div class="kv"><span>Wind-down plan if Amco ceases trading</span><b><span class="await">Awaiting data · OI-017</span></b></div>
+        <div class="kv"><span>FSCS or FOS protection</span><b><span class="await">Awaiting confirmation · OI-003</span></b></div>
+        <div class="kv"><span>Management fee</span><b>10% of rent plus VAT</b></div>
+        <div class="kv"><span>Full fee schedule and total cost drag</span><b><span class="await">Awaiting data · OI-013</span></b></div>
+        <div class="kv"><span>Amco co-investment</span><b>25% of every deal<span class="await" style="margin-left:6px">Terms · OI-022</span></b></div>
+      </div>
+    </div>
+
     <div class="card" style="margin-bottom:16px">
-      <h2>Your income — earning from day one</h2>
+      <h2>Your income, in pounds first</h2>
       <div class="grid2">
         <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--clay)">
-          <div class="eyebrow" style="color:var(--clay)">From day one</div><div class="bigprice" id="d-dayyield"></div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">on your <b style="color:var(--ink)">full capital</b>, while we refurbish &amp; refinance · <span id="d-dayper"></span>/share/yr</div>
+          <div class="eyebrow" style="color:var(--clay)">Months 0 to refinance</div><div class="bigprice" id="d-dayper"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">per share per year. That is <b style="color:var(--ink)"><span id="d-dayyield"></span></b> of the full share price (<span id="d-price3"></span>), while the property is refurbished and refinanced.</div>
         </div>
         <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--sage);background:var(--sageBg)">
-          <div class="eyebrow" style="color:var(--sage)">After refinance</div><div class="bigprice" id="d-refiyield"></div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">on the <b style="color:var(--ink)">capital left in</b>, once <span id="d-capback"></span> is returned · <span id="d-refiper"></span>/share/yr</div>
+          <div class="eyebrow" style="color:var(--sage)">After refinance</div><div class="bigprice" id="d-refiper"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">per share per year. That is <b style="color:var(--ink)"><span id="d-refiyield"></span></b> of the capital still in the deal, after <span id="d-capback"></span> of your money has been returned to you.</div>
         </div>
       </div>
-      <p style="font-size:12px;color:var(--muted);line-height:1.5;margin:14px 0 0">No dead period — the property is tenanted, so you earn from completion. Income is higher in pounds before refinance; after, it's lower because loan interest is paid, but most of your capital is back with you.</p>
+      <div style="border:1px solid var(--rule);border-left:3px solid var(--clay);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.55;margin:14px 0 0">
+        <b>Income in pounds goes down after refinance, not up.</b> Loan interest is paid first. The trade-off is that most of your capital is returned to you at that point. The percentage looks higher only because it is measured on the smaller amount still in the deal.
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.5;margin:10px 0 0">Capital growth included in these projections: £0. Any rise in the property's value is not promised and is not counted here.</p>
     </div>
 
     <div class="grid2" style="margin-bottom:16px">
@@ -451,7 +508,8 @@
 
     <div class="grid2" style="margin-bottom:16px">
       <div class="card"><h2>The deal, in full</h2><div id="d-breakdown"></div></div>
-      <div class="card"><h2 id="d-riskwhy"></h2><ul id="d-reasons" style="margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)"></ul>
+      <div class="card" id="d-scen-card" style="margin-bottom:0;display:none;grid-column:1/-1"><h2>If things do not go to plan</h2><div id="d-scen"></div></div>
+      <div class="card" id="d-riskwhy-card"><h2 id="d-riskwhy"></h2><ul id="d-reasons" style="margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)"></ul>
         <div style="height:1px;background:var(--rule);margin:12px 0"></div>
         <ul style="margin:0;padding:0;list-style:none;font-size:12px;color:var(--ink)">
           <li style="margin-bottom:6px">• <b>Still capital at risk.</b> Values can fall; you could get back less.</li>
@@ -636,7 +694,7 @@
   function markDealAnsSeen(id){ var s=getSeenAns(); s[id]=ansMap[id]||0; Store.set(seenAnsKey(), JSON.stringify(s)); }
   function refreshReplyDot(){ var dot=root.querySelector('#pf-dot'); if(dot) dot.style.display = (HOLDINGS.some(function(h){return dealHasNewReply(h.id);}) || heldNewUpdates().length>0) ? 'inline-block' : 'none'; }
   function loadReplies(){ Promise.resolve(DB.allQuestions()).then(function(qs){ ansMap={}; (qs||[]).forEach(function(q){ if(q.answer){ ansMap[q.deal_id]=(ansMap[q.deal_id]||0)+1; } }); renderList(); refreshReplyDot(); }).catch(function(){}); }
-  function refreshDealFunding(d){ var el=root.querySelector('#d-prog'); if(el && current && current.id===d.id){ el.innerHTML=d.fundingPct+'% funded · '+d.sharesLeft+' of '+d.sharesTotal+' shares left<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div>'; } }
+  function refreshDealFunding(d){ var el=root.querySelector('#d-prog'); if(el && current && current.id===d.id){ el.innerHTML = (d.fundingPct||0)>=5 ? (d.fundingPct+'% funded · '+d.sharesLeft+' of '+d.sharesTotal+' shares left<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div>') : ('Amco invests 25% alongside investors. '+(d.sharesLeft!=null?(d.sharesLeft+' of '+d.sharesTotal+' shares available.'):'')); } }
   function applyFunding(){ return Promise.resolve(DB.allCommitments()).then(function(cs){ var m={}; (cs||[]).forEach(function(c){ m[c.deal_id]=(m[c.deal_id]||0)+(parseInt(c.shares)||0); }); DEALS.forEach(function(d){ var total=d.sharesTotal||0, committed=m[d.id]||0; d.committedShares=committed; d.fundingPct=total?Math.min(100,Math.round(committed/total*100)):0; d.sharesLeft=Math.max(0,total-committed); }); renderList(); if(current){ refreshDealFunding(current); applyDealStatus(current); } }).catch(function(){}); }
   function dealStatus(d){
     if(!d) return null;
@@ -704,6 +762,8 @@
 
   /* list */
   function riskLabel(r){return r.charAt(0).toUpperCase()+r.slice(1)+' risk';}
+  function riskText(d){ return d.riskScore?('Risk '+d.riskScore+'/5'):riskLabel(d.risk); }
+  function timeBadge(d,mt){ return d.timeScore?('<span class="risk" style="background:#E8F0F2;color:var(--teal);'+(mt?'margin-top:6px;':'')+'">⏱ Time '+d.timeScore+'/5</span>'):''; }
   function renderList(){
     var list=root.querySelector('#list'); list.innerHTML='';
     if(!DEALS.length){ list.innerHTML='<div class="card" style="text-align:center;padding:40px"><div class="eyebrow" style="color:var(--clay)">No live deals yet</div><h2 style="margin:10px 0 6px">Nothing open right now</h2><p style="color:var(--muted);font-size:13.5px;max-width:380px;margin:0 auto">New investment opportunities will appear here as soon as they\u2019re published. Check back soon.</p></div>'; return; }
@@ -714,8 +774,9 @@
       var hasUpdate = dealHasNewUpdate(d.id) && HOLDINGS.some(function(h){return h.id===d.id;});
       var el=document.createElement('div'); el.className='lcard';
       el.dataset.type=d.type; el.dataset.risk=d.riskN; el.dataset.yield=parseFloat(d.refiYield); el.dataset.share=d.sharePrice;
+      var thumbBg=(d.photos&&d.photos[0])?'background:url('+d.photos[0]+') center/cover no-repeat':'background:'+d.grad;
       el.innerHTML=
-        '<div class="thumb" style="background:'+d.grad+'"><span class="tag">'+d.tag+'</span>'+(isNew?'<span class="newbadge">NEW</span>':'')+'</div>'+
+        '<div class="thumb" style="'+thumbBg+'"><span class="tag">'+d.tag+'</span>'+(isNew?'<span class="newbadge">NEW</span>':'')+'</div>'+
         '<div class="lbody"><h3>'+d.title+(hasReply?' <span class="replybadge">NEW REPLY</span>':'')+(hasUpdate?' <span class="updatebadge">UPDATE</span>':'')+'</h3><div class="loc">'+d.loc+'</div><div class="desc">'+d.desc+'</div>'+
         '<div class="stats">'+
           '<div class="stat"><div class="k">Share price</div><div class="v">'+f(d.sharePrice)+'</div><div class="s">'+d.sharesTotal+' shares · min 1</div></div>'+
@@ -723,11 +784,11 @@
           '<div class="stat"><div class="k">After refi</div><div class="v" style="color:var(--sage)">'+d.refiYield+'</div><div class="s">on money left in</div></div>'+
           '<div class="stat"><div class="k">Capital back</div><div class="v">'+d.capBack+'</div><div class="s">at refinance</div></div>'+
         '</div></div>'+
-        '<div class="side"><span class="risk '+d.risk+'">'+riskLabel(d.risk)+'</span>'+
-          '<div class="prog">'+d.fundingPct+'% funded<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div></div>'+
+        '<div class="side"><span class="risk '+d.risk+'">'+riskText(d)+'</span>'+timeBadge(d,true)+
+          ((d.fundingPct||0)>=5?('<div class="prog">'+d.fundingPct+'% funded<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div></div>'):'<div class="prog" style="color:var(--muted)">Amco invests 25% alongside investors</div>')+
           (dealStatus(d)
             ? '<div class="closes" style="color:var(--clay);font-weight:800">'+dealStatus(d).label+'</div><button class="btn btn-ghost view-btn" style="font-size:12px">View details</button>'
-            : '<div class="closes" data-dl="'+d.deadline+'">⏳ Closes in <span class="cd">'+leftStr(d.deadline)+'</span></div>'+
+            : '<div class="closes">Open until '+dateStr(d.deadline)+'</div>'+
               '<button class="btn invest-btn">Invest</button><button class="btn btn-ghost view-btn" style="font-size:12px">View details</button>')+
         '</div>';
       el.querySelector('.thumb').onclick=function(){openDeal(d.id);};
@@ -763,26 +824,33 @@
   function openDeal(id){
     var d=byId[id]; current=d;
     var q=function(s){return root.querySelector(s);};
-    q('#d-crumb').textContent=d.title; q('#d-tag').textContent=d.tag; q('#d-img').style.background=d.grad;
-    q('#d-risk').className='risk '+d.risk; q('#d-risk').textContent=riskLabel(d.risk);
+    q('#d-crumb').textContent=d.title; q('#d-tag').textContent=d.tag;
+    (function(){ var img=q('#d-img'); img.onclick=null; img.style.cursor=''; img.title='';
+      if(d.photos&&d.photos.length){ var pi=0; img.style.background='url('+d.photos[0]+') center/cover no-repeat';
+        if(d.photos.length>1){ img.style.cursor='pointer'; img.title='Tap to see more photos ('+d.photos.length+')'; img.onclick=function(){ pi=(pi+1)%d.photos.length; img.style.background='url('+d.photos[pi]+') center/cover no-repeat'; }; } }
+      else { img.style.background=d.grad; } })();
+    q('#d-risk').className='risk '+d.risk; q('#d-risk').textContent=riskText(d)+(d.timeScore?(' · ⏱ Time '+d.timeScore+'/5'):'');
     q('#d-title').textContent=d.title; q('#d-loc').textContent=d.loc; q('#d-price').textContent=f2(d.sharePrice);
     q('#d-prog').innerHTML=d.fundingPct+'% funded · '+d.sharesLeft+' of '+d.sharesTotal+' shares left<div class="bar"><i style="width:'+d.fundingPct+'%"></i></div>';
-    q('#d-closes').setAttribute('data-dl', d.deadline);
-    q('#d-closes').innerHTML='⏳ Open for investment — closes in <span class="cd">'+leftStr(d.deadline)+'</span> <span style="color:var(--muted)">('+dateStr(d.deadline)+')</span>';
-    q('#d-dayyield').textContent=d.dayYield; q('#d-dayper').textContent=f(d.per.day);
-    q('#d-refiyield').textContent=d.refiYield; q('#d-capback').textContent='~'+d.capBack; q('#d-refiper').textContent=f(d.per.refi);
+    q('#d-closes').removeAttribute('data-dl');
+    q('#d-closes').textContent='Open for investment until '+dateStr(d.deadline)+'.';
+    var mh=q('#d-minhead'); if(mh) mh.textContent='Minimum '+(d.minShares||1)+' share'+((d.minShares||1)>1?'s':'')+' ('+f((d.minShares||1)*d.sharePrice)+'). You reserve now; no money is taken at this stage.';
+    q('#d-dayper').textContent=f(d.per.day); q('#d-dayyield').textContent=d.dayYield;
+    q('#d-refiper').textContent=f(d.per.refi); q('#d-refiyield').textContent=d.refiYield; q('#d-capback').textContent='~'+d.capBack;
+    var p3=q('#d-price3'); if(p3) p3.textContent=f2(d.sharePrice);
     q('#d-price2').textContent=f2(d.sharePrice); q('#d-works').textContent=d.worksTxt; q('#d-loanmo').textContent=d.loanMonths;
-    q('#d-riskwhy').innerHTML='Why this is rated <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span>';
+    q('#d-riskwhy').innerHTML = d.riskScore ? ('Why these ratings — <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">Risk '+d.riskScore+'/5</span> · <span style="color:var(--teal)">Timeframe '+(d.timeScore||3)+'/5</span>') : ('Why this is rated <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span>');
     q('#d-breakdown').innerHTML=d.breakdown.map(function(r){return '<div class="kv"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('');
     var dc=q('#d-details-card');
     if(d.details && d.details.length){ q('#d-details').innerHTML=d.details.map(function(r){return '<div class="kv"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join(''); dc.style.display=''; } else { dc.style.display='none'; }
-    q('#d-reasons').innerHTML=d.reasons.map(function(r){return '<li style="margin-bottom:6px">'+r+'</li>';}).join('');
+    q('#d-reasons').innerHTML=d.reasons.map(function(r){return '<li style="margin-bottom:6px">'+r+'</li>';}).join('')+((d.timeReasons&&d.timeReasons.length)?('<li style="margin:10px 0 6px;font-weight:800;color:var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.03em;list-style:none">Timeframe</li>'+d.timeReasons.map(function(r){return '<li style="margin-bottom:6px">'+r+'</li>';}).join('')):'')+'<li style="margin-top:10px;list-style:none"><a href="#" id="d-method" style="color:var(--clay);font-weight:700;font-size:12px;text-decoration:none">How these scores are calculated →</a></li>';
     var min=Math.max(1, d.minShares||1);
     root.querySelector('#shares').value=min; renderStake();
     root.querySelector('#d-minnote').textContent='Minimum '+min+' share'+(min>1?'s':'')+' to invest · '+f(min*d.sharePrice)+' minimum';
     updateCountdowns();
     loadQA(d.id);
     renderProgress(d);
+    renderScenarios(d, parseInt(root.querySelector('#shares').value)||d.minShares||1);
     applyDealStatus(d);
     markDealAnsSeen(d.id); markDealUpSeen(d.id); refreshReplyDot(); renderList();
     go('deal');
@@ -814,6 +882,7 @@
     var n=Math.max(min,parseInt(root.querySelector('#shares').value)||min);
     if(d.sharesLeft!=null && d.sharesLeft>0 && n>d.sharesLeft){ n=Math.max(min,d.sharesLeft); }
     root.querySelector('#shares').value=n; var p=d.per;
+    renderScenarios(d,n);
     root.querySelector('#m-total').textContent=f(n*d.sharePrice);
     root.querySelector('#m-cashout').textContent=f(n*p.cashout);
     root.querySelector('#m-leftin').textContent=f(n*p.leftIn);
@@ -868,7 +937,7 @@
     matches.forEach(function(d){
       var sh=Math.floor(amt/d.sharePrice);
       var el=document.createElement('div'); el.className='brow';
-      el.innerHTML='<div style="flex:1 1 200px"><div style="font-weight:700;font-family:\'Space Grotesk\',sans-serif">'+d.title+' <span class="risk '+d.risk+'" style="font-size:9.5px;margin-left:6px">'+riskLabel(d.risk)+'</span></div>'+
+      el.innerHTML='<div style="flex:1 1 200px"><div style="font-weight:700;font-family:\'Space Grotesk\',sans-serif">'+d.title+' <span class="risk '+d.risk+'" style="font-size:9.5px;margin-left:6px">'+riskText(d)+'</span></div>'+
         '<div style="font-size:12px;color:var(--muted);margin-top:3px">'+sh+' share'+(sh>1?'s':'')+' ('+f(sh*d.sharePrice)+') · '+d.dayYield+' day one · '+d.refiYield+' after refi · closes in '+leftStr(d.deadline)+'</div></div>'+
         '<div style="display:flex;gap:8px"><button class="btn btn-ghost b-view" style="font-size:12px" data-id="'+d.id+'">View</button><button class="btn b-inv" style="font-size:12px" data-id="'+d.id+'" data-sh="'+sh+'">Invest</button></div>';
       box.appendChild(el);
@@ -958,8 +1027,8 @@
   var STMT={};
   function statement(h){
     var d=byId[h.id], s=STMT[h.id], frac=h.shares/d.sharesTotal;
-    var gross=s.rentMo*frac, mgmt=gross*0.12, ins=(s.insYr/12)*frac, intr=(h.stage>=2?(s.intYr/12)*frac:0);
-    return { gross:gross, mgmt:mgmt, ins:ins, intr:intr, net:gross-mgmt-ins-intr, hasLoan:h.stage>=2 };
+    var gross=s.rentMo*frac, mgmt=gross*0.12, ins=(s.insYr/12)*frac, intr=(h.stage>=2?(s.intYr/12)*frac:0), lease=((s.leaseYr||0)/12)*frac;
+    return { gross:gross, mgmt:mgmt, ins:ins, intr:intr, lease:lease, net:gross-mgmt-ins-lease-intr, hasLoan:h.stage>=2 };
   }
   function renderPortfolio(){
     root.querySelector('#pf-greet').textContent = state.name ? ('Welcome back, '+state.name.split(' ')[0]) : 'Your portfolio';
@@ -985,7 +1054,7 @@
       return '<div class="card">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">'+
           '<div><h2 style="margin:0">'+d.title+'</h2><div style="font-size:12px;color:var(--muted);margin-top:2px">'+h.shares+' shares · '+f(h.shares*d.sharePrice)+' invested</div></div>'+
-          '<span class="risk '+d.risk+'">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+' risk</span>'+
+          '<span class="risk '+d.risk+'">'+riskText(d)+'</span>'+
         '</div>'+
         stepper+
         '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">'+stageTxt+'</div>'+
@@ -996,6 +1065,7 @@
             '<div class="kv"><span>Your rent share</span><b>'+f2(st.gross)+'</b></div>'+
             '<div class="kv"><span>− Management (10% +VAT)</span><b>−'+f2(st.mgmt)+'</b></div>'+
             '<div class="kv"><span>− Insurance</span><b>−'+f2(st.ins)+'</b></div>'+
+            (st.lease>0?'<div class="kv"><span>− Ground rent &amp; service charge</span><b>−'+f2(st.lease)+'</b></div>':'')+
             (st.hasLoan?'<div class="kv"><span>− Mortgage interest</span><b>−'+f2(st.intr)+'</b></div>':'<div class="kv"><span>Mortgage interest</span><b style="color:var(--muted)">— pre-refinance</b></div>')+
             '<div class="kv net"><span>Net income to you</span><b>'+f2(st.net)+'</b></div>'+
           '</div>'+
@@ -1041,6 +1111,93 @@
 
   renderList(); renderBuilder(); loadSession(); setAuthUI(); setAuthMode('signup');
   root.querySelector('#pf-signout').onclick=signOut;
+  /* WP-1: risk warning layer. PRESCRIBED WORDING: do not edit without approver sign-off (OI-006). */
+  var RISK_WARNING='<b>Don\u2019t invest unless you\u2019re prepared to lose all the money you invest.</b> This is a high-risk investment and you should not expect to be protected if something goes wrong. <a data-riskmore>Take 2 mins to learn more.</a>';
+  (function(){
+    ['page-investments','page-deal'].forEach(function(pid){ var pg=root.querySelector('#'+pid); if(!pg) return; var wrap=pg.querySelector('.wrap'); if(!wrap) return; var b=document.createElement('div'); b.className='rwarn'; b.innerHTML=RISK_WARNING; wrap.insertBefore(b, wrap.firstChild); });
+    var modal=document.createElement('div'); modal.id='risk-pop';
+    modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(20,20,20,0.55);z-index:60;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML='<div style="background:#fff;border-radius:16px;max-width:460px;width:100%;max-height:80vh;overflow:auto;padding:22px">'+
+      '<h3 style="font-family:\'Space Grotesk\',sans-serif;font-size:17px;margin:0 0 10px">Key risks of this investment</h3>'+
+      '<div style="font-size:12px;margin-bottom:12px"><span class="await">Awaiting approved risk summary wording · OI-006</span></div>'+
+      '<div style="font-size:13px;line-height:1.6;color:var(--ink)">The approved risk summary from our compliance adviser will appear here. Until then, the essentials in plain terms:'+
+      '<ul style="margin:10px 0 0;padding-left:18px;color:var(--muted)"><li style="margin-bottom:7px">You could lose all the money you invest. Property values and rents can fall.</li>'+
+      '<li style="margin-bottom:7px">These shares are hard to sell. There is no established market; exiting needs notice and a buyer.</li>'+
+      '<li style="margin-bottom:7px">Projected figures are illustrative, not promises. Refinancing may be later, smaller or more expensive than planned.</li>'+
+      '<li style="margin-bottom:7px">Whether any FSCS or FOS protection applies is being confirmed. Do not assume it does.</li></ul></div>'+
+      '<button class="btn" id="risk-close" style="width:100%;margin-top:16px">Close</button></div>';
+    root.appendChild(modal);
+    root.addEventListener('click',function(e){ if(e.target.closest('[data-riskmore]')){ e.preventDefault(); modal.style.display='flex'; } });
+    modal.addEventListener('click',function(e){ if(e.target===modal||e.target.id==='risk-close') modal.style.display='none'; });
+  })();
+  /* WP-6: risk methodology */
+  (function(){
+    var m=document.createElement('div'); m.id='method-pop';
+    m.style.cssText='display:none;position:fixed;inset:0;background:rgba(20,20,20,0.55);z-index:60;align-items:center;justify-content:center;padding:20px';
+    m.innerHTML='<div style="background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:82vh;overflow:auto;padding:22px">'+
+      '<h3 style="font-family:\'Space Grotesk\',sans-serif;font-size:17px;margin:0 0 6px">How the scores are calculated</h3>'+
+      '<p style="font-size:12.5px;color:var(--muted);margin:0 0 12px">Both scores run from 1 (lowest) to 5 (highest). They are calculated from the deal\u2019s own figures. Nobody sets them by hand.</p>'+
+      '<div style="font-size:12.5px;line-height:1.65"><b>Risk /5 adds points for:</b><ul style="margin:6px 0 12px;padding-left:18px;color:var(--muted)">'+
+      '<li>Refurbishment size: works at 15%, 30% or 50% of the purchase price add progressively more.</li>'+
+      '<li>Leverage: refinancing above 70% loan-to-value adds; 80% or more adds more.</li>'+
+      '<li>Letting: vacant with no meaningful works planned adds. Vacancy during a refurbishment does not double-count.</li>'+
+      '<li>Valuation reliance: needing a 30% or 50% value uplift for the plan to work adds.</li>'+
+      '<li>Income cover: if projected income after refinance does not cover costs and interest, that adds a full point.</li>'+
+      '<li>Property type and tenure: commercial voids, multiple units, leasehold, and escalating ground rents each add a fraction.</li></ul>'+
+      '<b>Timeframe /5 adds points for:</b><ul style="margin:6px 0 0;padding-left:18px;color:var(--muted)">'+
+      '<li>How late the refinance is targeted (month 6, 10, 14 or later).</li>'+
+      '<li>How much capital stays in the deal after refinance.</li>'+
+      '<li>Larger works stretching the schedule.</li></ul></div>'+
+      '<button class="btn" id="method-close" style="width:100%;margin-top:16px">Close</button></div>';
+    root.appendChild(m);
+    root.addEventListener('click',function(e){ if(e.target.closest('#d-method')){ e.preventDefault(); m.style.display='flex'; } });
+    m.addEventListener('click',function(e){ if(e.target===m||e.target.id==='method-close') m.style.display='none'; });
+  })();
+  /* WP-5: downside scenarios, computed from the deal's stored inputs */
+  function renderScenarios(d,nShares){
+    var card=root.querySelector('#d-scen-card'), box=root.querySelector('#d-scen');
+    if(!card||!box) return;
+    var r=d.raw;
+    if(!r||!r.price||!r.value){ card.style.display='none'; return; }
+    card.style.display='';
+    var nsh=Math.max(1,nShares||d.minShares||1);
+    var shares=r.shares||d.sharesTotal||1, frac=nsh/shares;
+    var totalIn=(d.sharePrice||0)*shares;
+    var mgmtEff=((r.mgmt||0)/100)*(String(r.vat)==='1'?1.2:1);
+    var aftYr=(r.aft||0)*(String(r.aftU)==='12'?12:1);
+    var curYr=(r.cur||0)*(String(r.curU)==='12'?12:1);
+    var lease=(r.tenure==='leasehold')?((r.ground||0)+(r.svc||0)):0;
+    var plat=((r.plat||0)/100)*totalIn;
+    var voidsF=(r.voids||0)/100, fixedX=(r.spvadmin||0)+(r.lic||0);
+    function calc(valMult,rateAdd,slipMo){
+      var value=(r.value||0)*valMult;
+      var loan=value*((r.ltv||70)/100), fees=loan*((r.loanFee||0)/100), rel=loan-fees;
+      var interest=loan*(((r.rate||0)+rateAdd)/100);
+      var refiNet=aftYr*(1-mgmtEff-voidsF)-(r.ins||0)-lease-fixedX-interest-plat;
+      var dayNet=curYr>0?(curYr*(1-mgmtEff-voidsF)-(r.ins||0)-lease-fixedX-plat):0;
+      var mo=(r.loanmo||10)+slipMo;
+      var y1=dayNet*Math.min(12,mo)/12 + refiNet*Math.max(0,12-mo)/12;
+      return { back:Math.min(rel,totalIn)*frac, refi:refiNet*frac, y1:y1*frac, mo:mo };
+    }
+    var scen=[
+      ['The plan', calc(1,0,0), 'As published.'],
+      ['Refinance slips 6 months', calc(1,0,6), 'Same terms, six months later.'],
+      ['Valuation 5% under', calc(0.95,0,0), 'Value after works comes in 5% below plan.'],
+      ['Valuation 10% under', calc(0.90,0,0), 'Value after works comes in 10% below plan.'],
+      ['Interest 2% higher', calc(1,2,0), 'Refinance rate is 2 percentage points above plan.']
+    ];
+    var hc='font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;padding:7px 8px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap';
+    var bc='font-size:12.5px;padding:8px;border-bottom:1px solid var(--rule);text-align:right';
+    var html='<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Pound outcomes for your modelled stake of <b style="color:var(--ink)">'+nsh+' share'+(nsh>1?'s':'')+'</b>. These are illustrations, not limits: outcomes can be worse.</div>';
+    html+='<div style="overflow-x:auto"><div style="display:grid;grid-template-columns:1.4fr repeat(3,1fr);min-width:430px">';
+    html+='<div style="'+hc+';text-align:left">Scenario</div><div style="'+hc+'">Capital back at refi</div><div style="'+hc+'">Income, year one</div><div style="'+hc+'">Income / yr after refi</div>';
+    scen.forEach(function(sc){ var v=sc[1]; html+='<div style="'+bc+';text-align:left"><b>'+sc[0]+'</b><div style="font-size:10.5px;color:var(--muted)">'+sc[2]+'</div></div>'+
+      '<div style="'+bc+'">'+f(Math.round(v.back))+'</div><div style="'+bc+';'+(v.y1<0?'color:var(--clay)':'')+'">'+f(Math.round(v.y1))+'</div><div style="'+bc+';'+(v.refi<0?'color:var(--clay)':'')+'">'+f(Math.round(v.refi))+'</div>'; });
+    html+='</div></div>';
+    html+='<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">Assumptions come from this deal\u2019s stored figures: rent, management fee'+(voidsF?', voids and maintenance allowance':'')+', insurance'+(fixedX?', SPV running costs':'')+(lease?', ground rent and service charge':'')+', platform fee, loan fees and the published refinance month. Capital back is capped at the amount invested.</div>';
+    html+='<div style="border-top:1px solid var(--rule);margin-top:10px;padding-top:10px;font-size:12px;color:var(--ink);line-height:1.55"><b>At '+(r.ltv||70)+'% loan-to-value, a '+(100-(r.ltv||70))+'% fall in the property\u2019s value would wipe out the equity entirely.</b> A refinance is not an exit: cash released is borrowed against the property. You still hold your shares, still carry the risks, and no gain has been realised.</div>';
+    box.innerHTML=html;
+  }
   (function(){ var upPop=root.querySelector('#update-pop'); if(!upPop)return;
     root.querySelector('#up-view').onclick=function(){ var id=upPop.dataset.id; upPop.style.display='none'; if(id){ markDealUpSeen(id); if(byId[id]) openDeal(id); refreshReplyDot(); } };
     root.querySelector('#up-dismiss').onclick=function(){ var id=upPop.dataset.id; if(id) markDealUpSeen(id); upPop.style.display='none'; refreshReplyDot(); };
