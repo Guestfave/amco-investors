@@ -433,28 +433,19 @@
 
     <div class="card" id="d-own-card" style="margin-bottom:16px">
       <h2>What you own and what happens if we fail</h2>
-      <div style="font-size:12.5px;color:var(--muted);line-height:1.6">
-        <div class="kv"><span>Legal structure</span><b><span class="await">Awaiting data · OI-004</span></b></div>
-        <div class="kv"><span>Registered proprietor</span><b><span class="await">Awaiting data · OI-004</span></b></div>
-        <div class="kv"><span>Independent custody or trustee</span><b><span class="await">Awaiting data · OI-017</span></b></div>
-        <div class="kv"><span>Wind-down plan if Amco ceases trading</span><b><span class="await">Awaiting data · OI-017</span></b></div>
-        <div class="kv"><span>FSCS or FOS protection</span><b><span class="await">Awaiting confirmation · OI-003</span></b></div>
-        <div class="kv"><span>Management fee</span><b>10% of rent plus VAT</b></div>
-        <div class="kv"><span>Full fee schedule and total cost drag</span><b><span class="await">Awaiting data · OI-013</span></b></div>
-        <div class="kv"><span>Amco co-investment</span><b>25% of every deal<span class="await" style="margin-left:6px">Terms · OI-022</span></b></div>
-      </div>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.6" id="d-own"></div>
     </div>
 
     <div class="card" style="margin-bottom:16px">
       <h2>Your income, in pounds first</h2>
       <div class="grid2">
         <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--clay)">
-          <div class="eyebrow" style="color:var(--clay)">Months 0 to refinance</div><div class="bigprice" id="d-dayper"></div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">per share per year. That is <b style="color:var(--ink)"><span id="d-dayyield"></span></b> of the full share price (<span id="d-price3"></span>), while the property is refurbished and refinanced.</div>
+          <div class="eyebrow" style="color:var(--clay)">Months 0 to refinance</div><div class="bigprice" id="d-dayyield"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--ink)"><span id="d-dayper"></span> per share per year</b>, measured on the full share price (<span id="d-price3"></span>), while the property is refurbished and remortgaged.</div>
         </div>
         <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--sage);background:var(--sageBg)">
-          <div class="eyebrow" style="color:var(--sage)">After refinance</div><div class="bigprice" id="d-refiper"></div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">per share per year. That is <b style="color:var(--ink)"><span id="d-refiyield"></span></b> of the capital still in the deal, after <span id="d-capback"></span> of your money has been returned to you.</div>
+          <div class="eyebrow" style="color:var(--sage)">After refinance</div><div class="bigprice" id="d-refiyield"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--ink)"><span id="d-refiper"></span> per share per year</b>, measured on the capital still in the deal after <span id="d-capback"></span> of your money has been returned to you.</div>
         </div>
       </div>
       <div style="border:1px solid var(--rule);border-left:3px solid var(--clay);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.55;margin:14px 0 0">
@@ -481,9 +472,9 @@
       <div class="card">
         <h2>Timeline</h2>
         <div class="timeline"><div class="tline"></div>
-          <div class="tstep"><div class="dot" style="background:var(--ink)"></div><div><h4>Purchase completes</h4><div class="when">Month 0</div><p>Bought outright — already tenanted, so income starts day one.</p></div></div>
+          <div class="tstep"><div class="dot" style="background:var(--ink)"></div><div><h4>Purchase completes</h4><div class="when">Month 0</div><p id="d-tl-buy">Bought outright with investors\u2019 money, no mortgage at this stage.</p></div></div>
           <div class="tstep"><div class="dot" style="background:var(--amber)"></div><div><h4>Works</h4><div class="when">Early months</div><p id="d-works"></p></div></div>
-          <div class="tstep"><div class="dot" style="background:var(--clay)"></div><div><h4>Refinance — capital returned</h4><div class="when" id="d-loanmo"></div><p>Remortgage at 70% LTV; the bulk of your capital returned.</p></div></div>
+          <div class="tstep"><div class="dot" style="background:var(--clay)"></div><div><h4>Refinance — capital returned</h4><div class="when" id="d-loanmo"></div><p id="d-tl-refi"></p></div></div>
           <div class="tstep"><div class="dot" style="background:var(--sage)"></div><div><h4>Hold &amp; earn</h4><div class="when">Ongoing</div><p>Rent runs against the loan; the balance is yours.</p></div></div>
           <div class="tstep"><div class="dot" style="background:var(--teal)"></div><div><h4>Exit</h4><div class="when">Target 3–5 years</div><p>Sale or final refinance returns remaining capital plus growth.</p></div></div>
         </div>
@@ -839,6 +830,18 @@
     q('#d-refiper').textContent=f(d.per.refi); q('#d-refiyield').textContent=d.refiYield; q('#d-capback').textContent='~'+d.capBack;
     var p3=q('#d-price3'); if(p3) p3.textContent=f2(d.sharePrice);
     q('#d-price2').textContent=f2(d.sharePrice); q('#d-works').textContent=d.worksTxt; q('#d-loanmo').textContent=d.loanMonths;
+    var rw0=d.raw||{}, vac0=(d.stmt&&d.stmt.curYr!=null)?(d.stmt.curYr===0):((d.per&&d.per.day<=0)||false);
+    var tb=q('#d-tl-buy'); if(tb) tb.textContent='Bought outright with investors\u2019 money, no mortgage at this stage. '+(vac0?'Vacant on purchase; rent starts once the property is let.':'Already tenanted, so rent starts day one.');
+    var tr=q('#d-tl-refi'); if(tr) tr.textContent='Remortgage'+(rw0.ltv?' at '+rw0.ltv+'% loan-to-value':'')+'; about '+(d.capBack||'most')+' of your capital returned.';
+    var ownBox=q('#d-own'); if(ownBox){
+      var ow=d.own||{};
+      var rows=[['Legal structure',ow.structure,'OI-004'],['Registered proprietor',ow.proprietor,'OI-004'],['Independent custody or trustee',ow.custody,'OI-017'],['Wind-down plan if Amco ceases trading',ow.winddown,'OI-017'],['FSCS or FOS protection',ow.fscs,'OI-003'],['Management fee','10% of rent plus VAT',''],['Full fee schedule and total cost drag',ow.fees,'OI-013'],['Amco co-investment',(ow.coterms&&ow.coterms.trim())?ow.coterms:'25% of every deal. Full terms awaiting confirmation (OI-022).','']];
+      ownBox.innerHTML=rows.map(function(r0){
+        var has=r0[1]&&String(r0[1]).trim();
+        var val=has?('<b>'+escq(String(r0[1]))+'</b>'):('<b><span class="await">Awaiting data'+(r0[2]?' · '+r0[2]:'')+'</span></b>');
+        return '<div class="kv"><span>'+r0[0]+'</span>'+val+'</div>';
+      }).join('');
+    }
     q('#d-riskwhy').innerHTML = d.riskScore ? ('Why these ratings — <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">Risk '+d.riskScore+'/5</span> · <span style="color:var(--teal)">Timeframe '+(d.timeScore||3)+'/5</span>') : ('Why this is rated <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span>');
     q('#d-breakdown').innerHTML=d.breakdown.map(function(r){return '<div class="kv"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('');
     var dc=q('#d-details-card');
