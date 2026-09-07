@@ -754,7 +754,7 @@
       '</div>'+
       (SHOW_RATINGS&&reasons?'<div style="margin-top:22px">'+head('Why this risk rating'+(d.riskScore?' — '+d.riskScore+'/5':''))+'<ul style="margin:0;padding-left:18px;font-size:12px;color:#5C6A64">'+reasons+'</ul></div>':'')+
       ((SHOW_RATINGS&&d.timeReasons&&d.timeReasons.length)?'<div style="margin-top:14px">'+head('Timeframe — '+(d.timeScore||3)+'/5')+'<ul style="margin:0;padding-left:18px;font-size:12px;color:#5C6A64">'+d.timeReasons.map(function(r){return '<li style="margin-bottom:5px">'+escr(deb(r))+'</li>';}).join('')+'</ul></div>':'')+
-      '<div style="margin-top:26px;border-top:1px solid #E6E3DF;padding-top:12px;font-size:9.5px;color:#5C6A64;line-height:1.55">This document is for information only and is not financial advice. Projected figures are illustrative and not guaranteed. Property prices and rents can fall as well as rise, and you could lose all the money you invest. Whether this document constitutes a financial promotion, and the approvals it requires, is under review with our compliance adviser (OI-002, OI-006). Amco Investors co-invests 25% in every deal.</div>'+
+      '<div style="margin-top:26px;border-top:1px solid #E6E3DF;padding-top:12px;font-size:9.5px;color:#5C6A64;line-height:1.55">This document is for information only and is not financial advice. Projected figures are illustrative and not guaranteed. Property prices and rents can fall as well as rise, and you could lose all the money you invest. Whether this document constitutes a financial promotion, and the approvals it requires, is under review with our compliance adviser (OI-002, OI-006).</div>'+
     '</div>';
   }
   function loadPdfLibs(){
