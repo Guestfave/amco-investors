@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <div id="amco-app">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -1001,6 +1001,7 @@
     return m;
   }
   root.querySelector('#au-submit').onclick=function(){
+    if(!SB && window.supabase && window.supabase.createClient){ try{ SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); }catch(e){} }
     if(!SB){ authErr('Account service is not reachable right now. Please try again shortly.'); return; }
     var name=(root.querySelector('#au-name').value||'').trim();
     var email=(root.querySelector('#au-email').value||'').trim().toLowerCase();
