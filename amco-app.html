@@ -379,6 +379,93 @@
     </div>
 
     <div class="how-sec">
+      <div style="background:var(--clayBg);border:1px solid var(--clay);border-radius:14px;padding:16px">
+        <div class="eyebrow" style="color:var(--clay)">The honest part</div>
+        <p style="font-size:13px;color:var(--ink);line-height:1.55;margin:8px 0 0">Property can fall as well as rise, so your capital is at risk and you could get back less than you invest. Your money is committed — to exit you give 1–6 months' notice while we find a buyer for your shares. Every figure we show is an honest illustration, not a promise. None of this is financial advice.</p>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding-bottom:34px"><a class="btn" data-go="investments" style="padding:12px 26px">Browse investments</a></div>
+  </div>
+</div>
+
+<!-- INVESTMENTS LIST -->
+<div class="page" id="page-investments">
+  <div class="wrap">
+    <div class="head"><div class="eyebrow" style="color:var(--clay)">Live opportunities</div><h1 class="disp" style="font-size:30px;margin:6px 0 0">Investments</h1></div>
+    <div class="filters">
+      <div class="seg" id="typeSeg"><button class="on" data-type="all">All</button><button data-type="residential">Residential</button><button data-type="commercial">Commercial</button></div>
+      <button class="chip" data-risk="low">Low risk</button><button class="chip" data-risk="medium">Medium</button><button class="chip" data-risk="high">High</button>
+      <select id="sort"><option value="default">Sort: Newest</option><option value="yield">Highest yield</option><option value="risklow">Lowest risk</option><option value="share">Lowest share price</option></select>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="foot"><b>Capital at risk.</b> Yields are on capital left in after refinance (and a separate day-one yield on full capital) — illustrations, not promises; they fall if rates rise or rent drops. Costs assume 10% +VAT management plus insurance. Not financial advice.</div>
+  </div>
+</div>
+
+<!-- DEAL DETAIL -->
+<div class="page" id="page-deal">
+  <div class="wrap">
+    <div class="crumbs"><a data-go="investments">Investments</a> / <span id="d-crumb"></span></div>
+    <div class="dhero">
+      <div class="heroimg" id="d-img"><span class="tag" id="d-tag"></span></div>
+      <div class="herobuy card">
+        <span class="risk" id="d-risk"></span>
+        <h1 class="disp" id="d-title"></h1>
+        <div class="loc" id="d-loc"></div>
+        <div class="eyebrow">Share price</div><div class="bigprice" id="d-price"></div>
+        <div class="prog" id="d-prog" style="margin:10px 0 12px"></div>
+        <div class="closes" id="d-closes" style="margin-bottom:14px"></div>
+        <a class="btn" style="width:100%" id="d-invest">Invest in this deal</a>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center" id="d-minhead">You reserve now; no money is taken at this stage.</div>
+      </div>
+    </div>
+
+    <div class="vid sm" style="margin-bottom:16px;display:none" id="d-vid"><div class="vtag">Walkthrough</div><div class="play"></div><div class="vcap">▶ Watch a walkthrough of this deal</div></div>
+
+    <div class="card" id="d-own-card" style="margin-bottom:16px">
+      <h2>What you own and what happens if we fail</h2>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.6" id="d-own"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h2>Your income, in pounds first</h2>
+      <div class="grid2">
+        <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--clay)">
+          <div class="eyebrow" style="color:var(--clay)">Months 0 to refinance</div><div class="bigprice" id="d-dayyield"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--ink)"><span id="d-dayper"></span> per share per year</b>, measured on the full share price (<span id="d-price3"></span>), while the property is refurbished and remortgaged.</div>
+        </div>
+        <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--sage);background:var(--sageBg)">
+          <div class="eyebrow" style="color:var(--sage)">After refinance</div><div class="bigprice" id="d-refiyield"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--ink)"><span id="d-refiper"></span> per share per year</b>, measured on the capital still in the deal after <span id="d-capback"></span> of your money has been returned to you.</div>
+        </div>
+      </div>
+      <div style="border:1px solid var(--rule);border-left:3px solid var(--clay);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.55;margin:14px 0 0">
+        <b>Income in pounds goes down after refinance, not up.</b> Loan interest is paid first. The trade-off is that most of your capital is returned to you at that point. The percentage looks higher only because it is measured on the smaller amount still in the deal.
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.5;margin:10px 0 0">Capital growth included in these projections: £0. Any rise in the property's value is not promised and is not counted here.</p>
+    </div>
+
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="card">
+        <h2>Model your stake</h2>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div class="stepper"><button id="minus">−</button><input id="shares" value="1" inputmode="numeric"><button id="plus">+</button></div>
+          <div style="font-size:12px;color:var(--muted)">shares × <span id="d-price2"></span><br><b id="m-total" style="color:var(--ink)"></b> total</div>
+        </div>
+        <div id="d-minnote" style="font-size:11px;color:var(--muted);margin:0 0 14px"></div>
+        <div class="kv"><span>Capital back at refinance</span><b id="m-cashout"></b></div>
+        <div class="kv"><span>Stays invested</span><b id="m-leftin"></b></div>
+        <div class="kv"><span>Income from day one</span><b id="m-day"></b></div>
+        <div class="kv"><span>Income after refinance</span><b id="m-income"></b></div>
+        <div class="kv"><span>Projected total back <span style="color:var(--muted)">(5 yrs)</span></span><b id="m-total5"></b></div>
+        <a class="btn" style="width:100%;margin-top:14px" id="m-invest">Invest <span id="m-sh">5</span> shares</a>
+      </div>
+      <div class="card">
+        <h2>Timeline</h2>
+        <div class="timeline"><div class="tline"></div>
+          <div class="tstep"><div class="dot" style="background:var(--ink)"></div><div><h4>Purchase completes</h4><div class="when">Month 0</div><p id="d-tl-buy">Bought outright with investors&rsquo; money, no mortgage at this stage.</p></div></div>
           <div class="tstep"><div class="dot" style="background:var(--amber)"></div><div><h4>Works</h4><div class="when">Early months</div><p id="d-works"></p></div></div>
           <div class="tstep"><div class="dot" style="background:var(--clay)"></div><div><h4>Refinance — capital returned</h4><div class="when" id="d-loanmo"></div><p id="d-tl-refi"></p></div></div>
           <div class="tstep"><div class="dot" style="background:var(--sage)"></div><div><h4>Hold &amp; earn</h4><div class="when">Ongoing</div><p>Rent runs against the loan; the balance is yours.</p></div></div>
