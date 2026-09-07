@@ -197,6 +197,9 @@
     #amco-app .bfield input{ width:120px; font-size:20px; }
   }
 
+  /* ===== RATINGS OFF: risk/time ratings hidden pending recalibration ===== */
+  #amco-app .risk, #amco-app .tbadge, #amco-app #d-risk, #amco-app #d-riskwhy, #amco-app #d-reasons{ display:none !important; }
+  #amco-app #d-riskwhy-card{ display:none !important; }
   /* ===== POLISH LAYER: visual refinement only, no layout/JS changes ===== */
   #amco-app{ --paper:#F6F4F0; --rule:#E4E1DA; --shadow-s:0 1px 2px rgba(24,30,28,0.04), 0 2px 8px rgba(24,30,28,0.03); --shadow-h:0 2px 4px rgba(24,30,28,0.05), 0 12px 28px rgba(24,30,28,0.09); }
   #amco-app ::selection{ background:#FCDCDB; }
@@ -430,28 +433,19 @@
 
     <div class="card" id="d-own-card" style="margin-bottom:16px">
       <h2>What you own and what happens if we fail</h2>
-      <div style="font-size:12.5px;color:var(--muted);line-height:1.6">
-        <div class="kv"><span>Legal structure</span><b><span class="await">Awaiting data · OI-004</span></b></div>
-        <div class="kv"><span>Registered proprietor</span><b><span class="await">Awaiting data · OI-004</span></b></div>
-        <div class="kv"><span>Independent custody or trustee</span><b><span class="await">Awaiting data · OI-017</span></b></div>
-        <div class="kv"><span>Wind-down plan if Amco ceases trading</span><b><span class="await">Awaiting data · OI-017</span></b></div>
-        <div class="kv"><span>FSCS or FOS protection</span><b><span class="await">Awaiting confirmation · OI-003</span></b></div>
-        <div class="kv"><span>Management fee</span><b>10% of rent plus VAT</b></div>
-        <div class="kv"><span>Full fee schedule and total cost drag</span><b><span class="await">Awaiting data · OI-013</span></b></div>
-        <div class="kv"><span>Amco co-investment</span><b>25% of every deal<span class="await" style="margin-left:6px">Terms · OI-022</span></b></div>
-      </div>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.6" id="d-own"></div>
     </div>
 
     <div class="card" style="margin-bottom:16px">
       <h2>Your income, in pounds first</h2>
       <div class="grid2">
         <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--clay)">
-          <div class="eyebrow" style="color:var(--clay)">Months 0 to refinance</div><div class="bigprice" id="d-dayper"></div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">per share per year. That is <b style="color:var(--ink)"><span id="d-dayyield"></span></b> of the full share price (<span id="d-price3"></span>), while the property is refurbished and refinanced.</div>
+          <div class="eyebrow" style="color:var(--clay)">Months 0 to refinance</div><div class="bigprice" id="d-dayyield"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--ink)"><span id="d-dayper"></span> per share per year</b>, measured on the full share price (<span id="d-price3"></span>), while the property is refurbished and remortgaged.</div>
         </div>
         <div style="border:1px solid var(--rule);border-radius:12px;padding:16px;border-top:3px solid var(--sage);background:var(--sageBg)">
-          <div class="eyebrow" style="color:var(--sage)">After refinance</div><div class="bigprice" id="d-refiper"></div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">per share per year. That is <b style="color:var(--ink)"><span id="d-refiyield"></span></b> of the capital still in the deal, after <span id="d-capback"></span> of your money has been returned to you.</div>
+          <div class="eyebrow" style="color:var(--sage)">After refinance</div><div class="bigprice" id="d-refiyield"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px"><b style="color:var(--ink)"><span id="d-refiper"></span> per share per year</b>, measured on the capital still in the deal after <span id="d-capback"></span> of your money has been returned to you.</div>
         </div>
       </div>
       <div style="border:1px solid var(--rule);border-left:3px solid var(--clay);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.55;margin:14px 0 0">
@@ -478,9 +472,9 @@
       <div class="card">
         <h2>Timeline</h2>
         <div class="timeline"><div class="tline"></div>
-          <div class="tstep"><div class="dot" style="background:var(--ink)"></div><div><h4>Purchase completes</h4><div class="when">Month 0</div><p>Bought outright — already tenanted, so income starts day one.</p></div></div>
+          <div class="tstep"><div class="dot" style="background:var(--ink)"></div><div><h4>Purchase completes</h4><div class="when">Month 0</div><p id="d-tl-buy">Bought outright with investors\u2019 money, no mortgage at this stage.</p></div></div>
           <div class="tstep"><div class="dot" style="background:var(--amber)"></div><div><h4>Works</h4><div class="when">Early months</div><p id="d-works"></p></div></div>
-          <div class="tstep"><div class="dot" style="background:var(--clay)"></div><div><h4>Refinance — capital returned</h4><div class="when" id="d-loanmo"></div><p>Remortgage at 70% LTV; the bulk of your capital returned.</p></div></div>
+          <div class="tstep"><div class="dot" style="background:var(--clay)"></div><div><h4>Refinance — capital returned</h4><div class="when" id="d-loanmo"></div><p id="d-tl-refi"></p></div></div>
           <div class="tstep"><div class="dot" style="background:var(--sage)"></div><div><h4>Hold &amp; earn</h4><div class="when">Ongoing</div><p>Rent runs against the loan; the balance is yours.</p></div></div>
           <div class="tstep"><div class="dot" style="background:var(--teal)"></div><div><h4>Exit</h4><div class="when">Target 3–5 years</div><p>Sale or final refinance returns remaining capital plus growth.</p></div></div>
         </div>
@@ -506,7 +500,7 @@
     <div class="grid2" style="margin-bottom:16px">
       <div class="card"><h2>The deal, in full</h2><div id="d-breakdown"></div></div>
       <div class="card" id="d-scen-card" style="margin-bottom:0;display:none;grid-column:1/-1"><h2>If things do not go to plan</h2><div id="d-scen"></div></div>
-      <div class="card"><h2 id="d-riskwhy"></h2><ul id="d-reasons" style="margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)"></ul>
+      <div class="card" id="d-riskwhy-card"><h2 id="d-riskwhy"></h2><ul id="d-reasons" style="margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)"></ul>
         <div style="height:1px;background:var(--rule);margin:12px 0"></div>
         <ul style="margin:0;padding:0;list-style:none;font-size:12px;color:var(--ink)">
           <li style="margin-bottom:6px">• <b>Still capital at risk.</b> Values can fall; you could get back less.</li>
@@ -836,6 +830,18 @@
     q('#d-refiper').textContent=f(d.per.refi); q('#d-refiyield').textContent=d.refiYield; q('#d-capback').textContent='~'+d.capBack;
     var p3=q('#d-price3'); if(p3) p3.textContent=f2(d.sharePrice);
     q('#d-price2').textContent=f2(d.sharePrice); q('#d-works').textContent=d.worksTxt; q('#d-loanmo').textContent=d.loanMonths;
+    var rw0=d.raw||{}, vac0=(d.stmt&&d.stmt.curYr!=null)?(d.stmt.curYr===0):((d.per&&d.per.day<=0)||false);
+    var tb=q('#d-tl-buy'); if(tb) tb.textContent='Bought outright with investors\u2019 money, no mortgage at this stage. '+(vac0?'Vacant on purchase; rent starts once the property is let.':'Already tenanted, so rent starts day one.');
+    var tr=q('#d-tl-refi'); if(tr) tr.textContent='Remortgage'+(rw0.ltv?' at '+rw0.ltv+'% loan-to-value':'')+'; about '+(d.capBack||'most')+' of your capital returned.';
+    var ownBox=q('#d-own'); if(ownBox){
+      var ow=d.own||{};
+      var rows=[['Legal structure',ow.structure,'OI-004'],['Registered proprietor',ow.proprietor,'OI-004'],['Independent custody or trustee',ow.custody,'OI-017'],['Wind-down plan if Amco ceases trading',ow.winddown,'OI-017'],['FSCS or FOS protection',ow.fscs,'OI-003'],['Management fee','10% of rent plus VAT',''],['Full fee schedule and total cost drag',ow.fees,'OI-013'],['Amco co-investment',(ow.coterms&&ow.coterms.trim())?ow.coterms:'25% of every deal. Full terms awaiting confirmation (OI-022).','']];
+      ownBox.innerHTML=rows.map(function(r0){
+        var has=r0[1]&&String(r0[1]).trim();
+        var val=has?('<b>'+escq(String(r0[1]))+'</b>'):('<b><span class="await">Awaiting data'+(r0[2]?' · '+r0[2]:'')+'</span></b>');
+        return '<div class="kv"><span>'+r0[0]+'</span>'+val+'</div>';
+      }).join('');
+    }
     q('#d-riskwhy').innerHTML = d.riskScore ? ('Why these ratings — <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">Risk '+d.riskScore+'/5</span> · <span style="color:var(--teal)">Timeframe '+(d.timeScore||3)+'/5</span>') : ('Why this is rated <span style="color:var(--'+(d.risk==='low'?'sage':d.risk==='medium'?'amber':'clay')+')">'+d.risk.charAt(0).toUpperCase()+d.risk.slice(1)+'</span>');
     q('#d-breakdown').innerHTML=d.breakdown.map(function(r){return '<div class="kv"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('');
     var dc=q('#d-details-card');
@@ -1000,7 +1006,8 @@
     if(dd && dd.sharesLeft!=null){ n=Math.min(n, dd.sharesLeft); if(n<=0){ applyFunding(); return; } }
     if(ex){ ex.shares+=n; } else { HOLDINGS.push({id:id,shares:n,stage:1,monthsHeld:0}); } persistUser();
     var d=byId[id]; if(d){ var total=d.sharesTotal||0; d.committedShares=(d.committedShares||0)+n; d.fundingPct=total?Math.min(100,Math.round(d.committedShares/total*100)):0; d.sharesLeft=Math.max(0,total-d.committedShares); renderList(); refreshDealFunding(d); applyDealStatus(d); }
-    if(window.DB||DB){ Promise.resolve(DB.commit({deal_id:id, name:state.name||'Investor', email:state.email||'', shares:n})).then(function(){ applyFunding(); }); } }
+    if(window.DB||DB){ Promise.resolve(DB.commit({deal_id:id, name:state.name||'Investor', email:state.email||'', shares:n})).then(function(){ applyFunding(); }); }
+    if(d) sendReserveAlert(d,n); }
   function signOut(){ state.loggedIn=false; state.name=''; state.email=''; HOLDINGS=[]; setAuthUI(); Store.del('amco_session'); setAuthMode('login'); go('welcome'); }
   function loadSession(){ var em=Store.get('amco_session'); if(!em)return; var u=loadUsers()[em]; if(u) setUser(u); }
 
@@ -1109,6 +1116,32 @@
   renderList(); renderBuilder(); loadSession(); setAuthUI(); setAuthMode('signup');
   root.querySelector('#pf-signout').onclick=signOut;
   /* WP-1: risk warning layer. PRESCRIBED WORDING: do not edit without approver sign-off (OI-006). */
+  /* NOTIFY_EMAIL: set this to the address that should receive reservation alerts. */
+  var NOTIFY_EMAIL='hello@amcoinvestors.com'; // TODO: change to your real inbox before push
+  function sendReserveAlert(d,n){
+    try{
+      if(!NOTIFY_EMAIL || NOTIFY_EMAIL.indexOf('@')<0) return;
+      var sp=d.sharePrice||0, per=d.per||{};
+      var body={
+        _subject:'New reservation: '+(d.title||'deal')+' — '+n+' share'+(n>1?'s':''),
+        _template:'table',
+        investor_name: state.name||'Unknown',
+        investor_email: state.email||'Unknown',
+        deal: (d.title||'')+(d.loc?(' — '+d.loc):''),
+        shares_reserved: String(n),
+        total_committed: '£'+Math.round(n*sp).toLocaleString('en-GB'),
+        share_price: '£'+Math.round(sp).toLocaleString('en-GB'),
+        expected_capital_back: per.cashout!=null?('£'+Math.round(n*per.cashout).toLocaleString('en-GB')+' around month '+(d.raw&&d.raw.loanmo||10)):'n/a',
+        expected_income_after_refi: per.refi!=null?('£'+Math.round(n*per.refi).toLocaleString('en-GB')+' / yr'):'n/a',
+        deal_funding: (d.fundingPct||0)+'% · '+(d.sharesLeft!=null?d.sharesLeft+' shares left':''),
+        reserved_at: new Date().toLocaleString('en-GB')
+      };
+      fetch('https://formsubmit.co/ajax/'+encodeURIComponent(NOTIFY_EMAIL),{
+        method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify(body)
+      }).catch(function(){});
+    }catch(e){}
+  }
   var RISK_WARNING='<b>Don\u2019t invest unless you\u2019re prepared to lose all the money you invest.</b> This is a high-risk investment and you should not expect to be protected if something goes wrong. <a data-riskmore>Take 2 mins to learn more.</a>';
   (function(){
     ['page-investments','page-deal'].forEach(function(pid){ var pg=root.querySelector('#'+pid); if(!pg) return; var wrap=pg.querySelector('.wrap'); if(!wrap) return; var b=document.createElement('div'); b.className='rwarn'; b.innerHTML=RISK_WARNING; wrap.insertBefore(b, wrap.firstChild); });
@@ -1165,12 +1198,13 @@
     var curYr=(r.cur||0)*(String(r.curU)==='12'?12:1);
     var lease=(r.tenure==='leasehold')?((r.ground||0)+(r.svc||0)):0;
     var plat=((r.plat||0)/100)*totalIn;
+    var voidsF=(r.voids||0)/100, fixedX=(r.spvadmin||0)+(r.lic||0);
     function calc(valMult,rateAdd,slipMo){
       var value=(r.value||0)*valMult;
       var loan=value*((r.ltv||70)/100), fees=loan*((r.loanFee||0)/100), rel=loan-fees;
       var interest=loan*(((r.rate||0)+rateAdd)/100);
-      var refiNet=aftYr*(1-mgmtEff)-(r.ins||0)-lease-interest-plat;
-      var dayNet=curYr>0?(curYr*(1-mgmtEff)-(r.ins||0)-lease-plat):0;
+      var refiNet=aftYr*(1-mgmtEff-voidsF)-(r.ins||0)-lease-fixedX-interest-plat;
+      var dayNet=curYr>0?(curYr*(1-mgmtEff-voidsF)-(r.ins||0)-lease-fixedX-plat):0;
       var mo=(r.loanmo||10)+slipMo;
       var y1=dayNet*Math.min(12,mo)/12 + refiNet*Math.max(0,12-mo)/12;
       return { back:Math.min(rel,totalIn)*frac, refi:refiNet*frac, y1:y1*frac, mo:mo };
@@ -1179,6 +1213,7 @@
       ['The plan', calc(1,0,0), 'As published.'],
       ['Refinance slips 6 months', calc(1,0,6), 'Same terms, six months later.'],
       ['Valuation 5% under', calc(0.95,0,0), 'Value after works comes in 5% below plan.'],
+      ['Valuation 10% under', calc(0.90,0,0), 'Value after works comes in 10% below plan.'],
       ['Interest 2% higher', calc(1,2,0), 'Refinance rate is 2 percentage points above plan.']
     ];
     var hc='font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;padding:7px 8px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap';
@@ -1189,7 +1224,8 @@
     scen.forEach(function(sc){ var v=sc[1]; html+='<div style="'+bc+';text-align:left"><b>'+sc[0]+'</b><div style="font-size:10.5px;color:var(--muted)">'+sc[2]+'</div></div>'+
       '<div style="'+bc+'">'+f(Math.round(v.back))+'</div><div style="'+bc+';'+(v.y1<0?'color:var(--clay)':'')+'">'+f(Math.round(v.y1))+'</div><div style="'+bc+';'+(v.refi<0?'color:var(--clay)':'')+'">'+f(Math.round(v.refi))+'</div>'; });
     html+='</div></div>';
-    html+='<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">Assumptions come from this deal\u2019s stored figures: rent, management fee, insurance'+(lease?', ground rent and service charge':'')+', platform fee, loan fees and the published refinance month. Capital back is capped at the amount invested.</div>';
+    html+='<div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">Assumptions come from this deal\u2019s stored figures: rent, management fee'+(voidsF?', voids and maintenance allowance':'')+', insurance'+(fixedX?', SPV running costs':'')+(lease?', ground rent and service charge':'')+', platform fee, loan fees and the published refinance month. Capital back is capped at the amount invested.</div>';
+    html+='<div style="border-top:1px solid var(--rule);margin-top:10px;padding-top:10px;font-size:12px;color:var(--ink);line-height:1.55"><b>At '+(r.ltv||70)+'% loan-to-value, a '+(100-(r.ltv||70))+'% fall in the property\u2019s value would wipe out the equity entirely.</b> A refinance is not an exit: cash released is borrowed against the property. You still hold your shares, still carry the risks, and no gain has been realised.</div>';
     box.innerHTML=html;
   }
   (function(){ var upPop=root.querySelector('#update-pop'); if(!upPop)return;
