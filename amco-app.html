@@ -1018,7 +1018,7 @@
   root.querySelector('#auth-form').addEventListener('submit',function(ev){ ev.preventDefault(); authSubmit(); });
   root.querySelector('#au-eye').onclick=function(){ var p=root.querySelector('#au-pass'); p.type = p.type==='password'?'text':'password'; this.style.opacity = p.type==='text'?'1':'0.55'; };
   function authSubmit(){
-    if(!SB && window.supabase && window.supabase.createClient){ try{ SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); }catch(e){} }
+    if(!SB && window.supabase && window.supabase.createClient){ try{ SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); attachAuthListener(); }catch(e){} }
     if(!SB){ authErr('Account service is not reachable right now. Please try again shortly.'); return; }
     var name=(root.querySelector('#au-name').value||'').trim();
     var email=(root.querySelector('#au-email').value||'').trim().toLowerCase();
@@ -1031,7 +1031,7 @@
       SB.auth.signUp({ email:email, password:pass, options:{ data:{ name:name }, emailRedirectTo:APP_URL } }).then(function(res){
         done();
         if(res.error){ authErr(friendlyAuthError(res.error)); return; }
-        if(res.data && res.data.session){ /* confirmations off */ return; }
+        if(res.data && res.data.session){ setUserFromSession(res.data.session); return; }
         authNote('Nearly there. We have sent a confirmation link to '+email+' — click it, then come back and log in.');
         setTimeout(function(){ setAuthMode('login'); root.querySelector('#au-email').value=email; authNote('Confirmation link sent to '+email+'. Click it, then log in here.'); },400);
       });
@@ -1050,6 +1050,7 @@
           authErr(friendlyAuthError(res.error)); return;
         }
         root.querySelector('#au-pass').value='';
+        if(res.data && res.data.session){ setUserFromSession(res.data.session); }
       });
     } else if(authMode==='forgot'){
       if(!email){ authErr('Enter the email you signed up with.'); done(); return; }
@@ -1101,7 +1102,9 @@
         authNote('That confirmation link has expired or was already used. Just log in below — if your email still needs confirming, we will automatically send you a fresh link.'); },50);
     }
   })();
-  if(SB){
+  function attachAuthListener(){
+    if(!SB || SB.__amcoListened) return;
+    SB.__amcoListened=true;
     SB.auth.onAuthStateChange(function(evt,sess){
       if(evt==='PASSWORD_RECOVERY'){ setAuthMode('reset'); go('signin'); if(sess) { AUTH_TOKEN=sess.access_token||''; } return; }
       if(evt==='TOKEN_REFRESHED'&&sess){ AUTH_TOKEN=sess.access_token||''; return; }
@@ -1109,6 +1112,7 @@
       if(evt==='SIGNED_OUT'){ AUTH_TOKEN=''; }
     });
   }
+  attachAuthListener();
   function setUser(u){ state.loggedIn=true; state.name=u.name; state.email=u.email; HOLDINGS=u.holdings||[]; setAuthUI(); Store.set('amco_session', u.email); }
   function persistUser(){ if(!state.email)return; var users=loadUsers(); if(users[state.email]){ users[state.email].holdings=HOLDINGS; saveUsers(users); } }
   function addHolding(id,n){ var ex=null; HOLDINGS.forEach(function(h){ if(h.id===id) ex=h; });
