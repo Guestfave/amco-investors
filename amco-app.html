@@ -1022,7 +1022,16 @@
       if(!email||!pass){ authErr('Please enter an email and password.'); done(); return; }
       SB.auth.signInWithPassword({ email:email, password:pass }).then(function(res){
         done();
-        if(res.error){ authErr(friendlyAuthError(res.error)); return; }
+        if(res.error){
+          if(/email not confirmed/i.test(res.error.message||'')){
+            SB.auth.resend({ type:'signup', email:email, options:{ emailRedirectTo:APP_URL } }).then(function(rr){
+              if(rr.error){ authErr('Your email still needs confirming, and we could not send a new link just now ('+friendlyAuthError(rr.error)+'). Try again in an hour.'); }
+              else { authNote('Your email still needs confirming, so we have just sent you a fresh link. Click it, then log in here.'); }
+            });
+            return;
+          }
+          authErr(friendlyAuthError(res.error)); return;
+        }
         root.querySelector('#au-pass').value='';
       });
     } else if(authMode==='forgot'){
@@ -1067,6 +1076,14 @@
     if(PENDING){ addHolding(PENDING.id, PENDING.n); PENDING=null; }
     if(currentPage==='signin'){ go(hadPending?'portfolio':'home'); }
   }
+  (function(){
+    var h=window.location.hash||'';
+    if(h.indexOf('error_code=otp_expired')>-1 || h.indexOf('error=access_denied')>-1){
+      try{ history.replaceState(null,'',window.location.pathname); }catch(e){}
+      setTimeout(function(){ setAuthMode('login'); go('signin');
+        authNote('That confirmation link has expired or was already used. Just log in below — if your email still needs confirming, we will automatically send you a fresh link.'); },50);
+    }
+  })();
   if(SB){
     SB.auth.onAuthStateChange(function(evt,sess){
       if(evt==='PASSWORD_RECOVERY'){ setAuthMode('reset'); go('signin'); if(sess) { AUTH_TOKEN=sess.access_token||''; } return; }
