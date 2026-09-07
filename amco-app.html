@@ -577,13 +577,15 @@
       <div class="eyebrow" style="color:var(--clay)" id="auth-eyebrow">Create your account</div>
       <h1 class="disp" style="font-size:24px;margin:6px 0 4px" id="auth-title">Join the demo</h1>
       <p style="font-size:12.5px;color:var(--muted);margin:0 0 16px" id="auth-sub">Browse deals, reserve shares and track your portfolio on any device.</p>
-      <label class="bfield2" id="row-name"><span>Full name</span><input id="au-name" placeholder="Your name"></label>
-      <label class="bfield2"><span>Email</span><input id="au-email" type="email" placeholder="you@example.com" autocomplete="off"></label>
-      <label class="bfield2"><span>Password</span><input id="au-pass" type="password" placeholder="At least 6 characters" autocomplete="new-password"></label>
+      <form id="auth-form" autocomplete="on" novalidate>
+      <label class="bfield2" id="row-name"><span>Full name</span><input id="au-name" name="name" placeholder="Your name" autocomplete="name"></label>
+      <label class="bfield2"><span>Email</span><input id="au-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" inputmode="email"></label>
+      <label class="bfield2" style="position:relative"><span>Password</span><input id="au-pass" name="password" type="password" placeholder="At least 6 characters" autocomplete="current-password" style="padding-right:44px"><span id="au-eye" style="position:absolute;right:12px;bottom:10px;cursor:pointer;font-size:15px;opacity:0.55;user-select:none" title="Show password">&#128065;</span></label>
       <div id="auth-err" style="display:none;color:var(--danger);font-size:12px;font-weight:600;margin:4px 0 0"></div>
       <div id="auth-note" style="display:none;color:var(--sage);font-size:12.5px;font-weight:600;margin:4px 0 0;line-height:1.5"></div>
       <div style="text-align:right;margin-top:8px"><span id="auth-forgot" style="color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline">Forgotten your password?</span></div>
-      <a class="btn" style="width:100%;margin-top:14px" id="au-submit">Create account</a>
+      <button type="submit" class="btn" style="width:100%;margin-top:14px;border:none;cursor:pointer;font-family:inherit;font-size:14px" id="au-submit">Create account</button>
+      </form>
       <div style="text-align:center;margin-top:12px;font-size:12.5px;color:var(--muted)"><span id="auth-switch-text">Already have an account?</span> <span style="color:var(--clay);font-weight:700;cursor:pointer" id="auth-switch">Log in</span></div>
     </div>
   </div>
@@ -1013,7 +1015,9 @@
     if(/rate limit/i.test(m)) return 'Too many attempts. Wait a minute and try again.';
     return m;
   }
-  root.querySelector('#au-submit').onclick=function(){
+  root.querySelector('#auth-form').addEventListener('submit',function(ev){ ev.preventDefault(); authSubmit(); });
+  root.querySelector('#au-eye').onclick=function(){ var p=root.querySelector('#au-pass'); p.type = p.type==='password'?'text':'password'; this.style.opacity = p.type==='text'?'1':'0.55'; };
+  function authSubmit(){
     if(!SB && window.supabase && window.supabase.createClient){ try{ SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); }catch(e){} }
     if(!SB){ authErr('Account service is not reachable right now. Please try again shortly.'); return; }
     var name=(root.querySelector('#au-name').value||'').trim();
@@ -1064,7 +1068,7 @@
         setTimeout(function(){ go('home'); },700);
       });
     }
-  };
+  }
   root.querySelector('#auth-forgot').onclick=function(){ setAuthMode('forgot'); };
   var SB=null; try{ if(window.supabase&&window.supabase.createClient){ SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); } }catch(e){}
   var AUTH_TOKEN='';
