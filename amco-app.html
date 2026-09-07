@@ -1,5 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <div id="amco-app">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -576,11 +577,13 @@
     <div class="card" style="margin-top:24px">
       <div class="eyebrow" style="color:var(--clay)" id="auth-eyebrow">Create your account</div>
       <h1 class="disp" style="font-size:24px;margin:6px 0 4px" id="auth-title">Join the demo</h1>
-      <p style="font-size:12.5px;color:var(--muted);margin:0 0 16px" id="auth-sub">Set up an account to browse deals, reserve shares and track a portfolio. This is a prototype — please use a throwaway password, not one you use elsewhere.</p>
+      <p style="font-size:12.5px;color:var(--muted);margin:0 0 16px" id="auth-sub">Browse deals, reserve shares and track your portfolio on any device.</p>
       <label class="bfield2" id="row-name"><span>Full name</span><input id="au-name" placeholder="Your name"></label>
       <label class="bfield2"><span>Email</span><input id="au-email" type="email" placeholder="you@example.com" autocomplete="off"></label>
       <label class="bfield2"><span>Password</span><input id="au-pass" type="password" placeholder="A throwaway password" autocomplete="off"></label>
       <div id="auth-err" style="display:none;color:var(--danger);font-size:12px;font-weight:600;margin:4px 0 0"></div>
+      <div id="auth-note" style="display:none;color:var(--sage);font-size:12.5px;font-weight:600;margin:4px 0 0;line-height:1.5"></div>
+      <div style="text-align:right;margin-top:8px"><span id="auth-forgot" style="color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline">Forgotten your password?</span></div>
       <a class="btn" style="width:100%;margin-top:14px" id="au-submit">Create account</a>
       <div style="text-align:center;margin-top:12px;font-size:12.5px;color:var(--muted)"><span id="auth-switch-text">Already have an account?</span> <span style="color:var(--clay);font-weight:700;cursor:pointer" id="auth-switch">Log in</span></div>
     </div>
@@ -734,8 +737,10 @@
     root.querySelector('#up-stage').textContent = 'Now at: '+stageLabel(d.stage||'funding');
     pop.dataset.id=d.id; pop.style.display='flex';
   }
+  var currentPage='welcome';
   function go(name){
     if(!state.loggedIn && name!=='welcome' && name!=='signin'){ name='welcome'; }
+    currentPage=name;
     if(name==='portfolio') renderPortfolio();
     root.querySelectorAll('.page').forEach(function(p){p.classList.remove('show');});
     var el=root.querySelector('#page-'+name); if(el) el.classList.add('show');
@@ -967,37 +972,108 @@
 
   var authMode='signup';
   function setAuthMode(m){ authMode=m;
-    root.querySelector('#auth-eyebrow').textContent = m==='signup'?'Create your account':'Welcome back';
-    root.querySelector('#auth-title').textContent = m==='signup'?'Join the demo':'Log in';
-    root.querySelector('#au-submit').textContent = m==='signup'?'Create account':'Log in';
-    root.querySelector('#row-name').style.display = m==='signup'?'block':'none';
+    var eb=root.querySelector('#auth-eyebrow'), tt=root.querySelector('#auth-title'), sb2=root.querySelector('#au-submit');
+    var rowName=root.querySelector('#row-name'), rowEmail=root.querySelector('#au-email').closest('.bfield2'), rowPass=root.querySelector('#au-pass').closest('.bfield2');
+    var fg=root.querySelector('#auth-forgot');
+    if(m==='signup'){ eb.textContent='Create your account'; tt.textContent='Create account'; sb2.textContent='Create account'; }
+    if(m==='login'){ eb.textContent='Welcome back'; tt.textContent='Log in'; sb2.textContent='Log in'; }
+    if(m==='forgot'){ eb.textContent='Reset your password'; tt.textContent='Forgotten password'; sb2.textContent='Email me a reset link'; }
+    if(m==='reset'){ eb.textContent='Almost there'; tt.textContent='Choose a new password'; sb2.textContent='Set new password'; }
+    rowName.style.display = m==='signup'?'block':'none';
+    rowEmail.style.display = m==='reset'?'none':'block';
+    rowPass.style.display = m==='forgot'?'none':'block';
+    fg.style.display = m==='login'?'inline':'none';
     root.querySelector('#auth-switch-text').textContent = m==='signup'?'Already have an account?':'New here?';
     root.querySelector('#auth-switch').textContent = m==='signup'?'Log in':'Create one';
-    root.querySelector('#auth-err').style.display='none';
+    root.querySelector('#auth-err').style.display='none'; var nt=root.querySelector('#auth-note'); if(nt) nt.style.display='none';
   }
+  function authNote(msg){ var e=root.querySelector('#auth-note'); e.textContent=msg; e.style.display='block'; root.querySelector('#auth-err').style.display='none'; }
   function authErr(msg){ var e=root.querySelector('#auth-err'); e.textContent=msg; e.style.display='block'; }
   root.querySelector('#auth-switch').onclick=function(){ setAuthMode(authMode==='signup'?'login':'signup'); };
+  var APP_URL=window.location.origin+window.location.pathname;
+  function friendlyAuthError(err){
+    var m=(err&&err.message)||'Something went wrong. Please try again.';
+    if(/invalid login credentials/i.test(m)) return 'Email or password not recognised.';
+    if(/email not confirmed/i.test(m)) return 'Please confirm your email first. Check your inbox for our confirmation link.';
+    if(/already registered/i.test(m)) return 'That email already has an account. Try logging in.';
+    if(/at least 6/i.test(m)||/password/i.test(m)&&/short|weak|length/i.test(m)) return 'Password needs to be at least 6 characters.';
+    if(/rate limit/i.test(m)) return 'Too many attempts. Wait a minute and try again.';
+    return m;
+  }
   root.querySelector('#au-submit').onclick=function(){
+    if(!SB){ authErr('Account service is not reachable right now. Please try again shortly.'); return; }
     var name=(root.querySelector('#au-name').value||'').trim();
     var email=(root.querySelector('#au-email').value||'').trim().toLowerCase();
     var pass=root.querySelector('#au-pass').value||'';
-    if(!email||!pass){ authErr('Please enter an email and password.'); return; }
-    var users=loadUsers();
+    var btn=root.querySelector('#au-submit'); btn.style.opacity='0.6'; btn.style.pointerEvents='none';
+    function done(){ btn.style.opacity=''; btn.style.pointerEvents=''; }
     if(authMode==='signup'){
-      if(!name){ authErr('Please enter your name.'); return; }
-      if(users[email]){ authErr('That email already has an account — try logging in.'); return; }
-      users[email]={ name:name, email:email, pass:hash(pass), holdings:[] };
-      saveUsers(users); setUser(users[email]);
-    } else {
-      var u=users[email];
-      if(!u || u.pass!==hash(pass)){ authErr('Email or password not recognised.'); return; }
-      setUser(u);
+      if(!name){ authErr('Please enter your name.'); done(); return; }
+      if(!email||!pass){ authErr('Please enter an email and password.'); done(); return; }
+      SB.auth.signUp({ email:email, password:pass, options:{ data:{ name:name }, emailRedirectTo:APP_URL } }).then(function(res){
+        done();
+        if(res.error){ authErr(friendlyAuthError(res.error)); return; }
+        if(res.data && res.data.session){ /* confirmations off */ return; }
+        authNote('Nearly there. We have sent a confirmation link to '+email+' — click it, then come back and log in.');
+        setTimeout(function(){ setAuthMode('login'); root.querySelector('#au-email').value=email; authNote('Confirmation link sent to '+email+'. Click it, then log in here.'); },400);
+      });
+    } else if(authMode==='login'){
+      if(!email||!pass){ authErr('Please enter an email and password.'); done(); return; }
+      SB.auth.signInWithPassword({ email:email, password:pass }).then(function(res){
+        done();
+        if(res.error){ authErr(friendlyAuthError(res.error)); return; }
+        root.querySelector('#au-pass').value='';
+      });
+    } else if(authMode==='forgot'){
+      if(!email){ authErr('Enter the email you signed up with.'); done(); return; }
+      SB.auth.resetPasswordForEmail(email,{ redirectTo:APP_URL }).then(function(res){
+        done();
+        if(res.error){ authErr(friendlyAuthError(res.error)); return; }
+        authNote('Reset link sent to '+email+'. Check your inbox (and spam), click the link, and you will be brought back here to choose a new password.');
+      });
+    } else if(authMode==='reset'){
+      if(!pass){ authErr('Choose a new password (at least 6 characters).'); done(); return; }
+      SB.auth.updateUser({ password:pass }).then(function(res){
+        done();
+        if(res.error){ authErr(friendlyAuthError(res.error)); return; }
+        root.querySelector('#au-pass').value='';
+        authNote('Password updated. You are signed in.');
+        setTimeout(function(){ go('home'); },700);
+      });
     }
-    root.querySelector('#au-name').value=''; root.querySelector('#au-email').value=''; root.querySelector('#au-pass').value='';
+  };
+  root.querySelector('#auth-forgot').onclick=function(){ setAuthMode('forgot'); };
+  var SB=null; try{ if(window.supabase&&window.supabase.createClient){ SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); } }catch(e){}
+  var AUTH_TOKEN='';
+  function loadHoldingsFromDB(uid,email){
+    function apply(rows){ var agg={}; (rows||[]).forEach(function(r){ agg[r.deal_id]=(agg[r.deal_id]||0)+(parseInt(r.shares)||0); });
+      HOLDINGS=Object.keys(agg).filter(function(k){return agg[k]>0;}).map(function(k){ return {id:k, shares:agg[k], stage:1, monthsHeld:0}; });
+      if(currentPage==='portfolio') renderPortfolio();
+    }
+    var base=SUPABASE_URL+'/rest/v1/commitments?select=deal_id,shares';
+    var h={ apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+(AUTH_TOKEN||SUPABASE_ANON_KEY) };
+    fetch(base+'&or=(user_id.eq.'+uid+',email.eq.'+encodeURIComponent(email)+')',{headers:h})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(apply)
+      .catch(function(){ fetch(base+'&email=eq.'+encodeURIComponent(email),{headers:h}).then(function(r){return r.ok?r.json():[];}).then(apply).catch(function(){}); });
+  }
+  function setUserFromSession(sess){
+    if(!sess||!sess.user) return;
+    AUTH_TOKEN=sess.access_token||'';
+    state.loggedIn=true; state.email=(sess.user.email||'').toLowerCase();
+    state.name=(sess.user.user_metadata&&sess.user.user_metadata.name)||state.email.split('@')[0];
+    setAuthUI(); loadHoldingsFromDB(sess.user.id, state.email);
     var hadPending=!!PENDING;
     if(PENDING){ addHolding(PENDING.id, PENDING.n); PENDING=null; }
-    go(hadPending?'portfolio':'home');
-  };
+    if(currentPage==='signin'){ go(hadPending?'portfolio':'home'); }
+  }
+  if(SB){
+    SB.auth.onAuthStateChange(function(evt,sess){
+      if(evt==='PASSWORD_RECOVERY'){ setAuthMode('reset'); go('signin'); if(sess) { AUTH_TOKEN=sess.access_token||''; } return; }
+      if(evt==='TOKEN_REFRESHED'&&sess){ AUTH_TOKEN=sess.access_token||''; return; }
+      if((evt==='SIGNED_IN'||evt==='INITIAL_SESSION')&&sess){ setUserFromSession(sess); }
+      if(evt==='SIGNED_OUT'){ AUTH_TOKEN=''; }
+    });
+  }
   function setUser(u){ state.loggedIn=true; state.name=u.name; state.email=u.email; HOLDINGS=u.holdings||[]; setAuthUI(); Store.set('amco_session', u.email); }
   function persistUser(){ if(!state.email)return; var users=loadUsers(); if(users[state.email]){ users[state.email].holdings=HOLDINGS; saveUsers(users); } }
   function addHolding(id,n){ var ex=null; HOLDINGS.forEach(function(h){ if(h.id===id) ex=h; });
@@ -1008,8 +1084,8 @@
     var d=byId[id]; if(d){ var total=d.sharesTotal||0; d.committedShares=(d.committedShares||0)+n; d.fundingPct=total?Math.min(100,Math.round(d.committedShares/total*100)):0; d.sharesLeft=Math.max(0,total-d.committedShares); renderList(); refreshDealFunding(d); applyDealStatus(d); }
     if(window.DB||DB){ Promise.resolve(DB.commit({deal_id:id, name:state.name||'Investor', email:state.email||'', shares:n})).then(function(){ applyFunding(); }); }
     if(d) sendReserveAlert(d,n); }
-  function signOut(){ state.loggedIn=false; state.name=''; state.email=''; HOLDINGS=[]; setAuthUI(); Store.del('amco_session'); setAuthMode('login'); go('welcome'); }
-  function loadSession(){ var em=Store.get('amco_session'); if(!em)return; var u=loadUsers()[em]; if(u) setUser(u); }
+  function signOut(){ if(SB){ SB.auth.signOut().catch(function(){}); } state.loggedIn=false; state.name=''; state.email=''; HOLDINGS=[]; AUTH_TOKEN=''; setAuthUI(); Store.del('amco_session'); setAuthMode('login'); go('welcome'); }
+  function loadSession(){ /* real sessions restore via Supabase INITIAL_SESSION; legacy demo fallback below */ if(SB) return; var em=Store.get('amco_session'); if(!em)return; var u=loadUsers()[em]; if(u) setUser(u); }
 
   function setAuthUI(){
     var el=root.querySelector('#nav-auth');
@@ -1097,7 +1173,7 @@
   var DB = (function(){
     var TABLE='deals';
     var on = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
-    function hdr(){ return { apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+SUPABASE_ANON_KEY, 'Content-Type':'application/json' }; }
+    function hdr(){ return { apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+((typeof AUTH_TOKEN!=='undefined'&&AUTH_TOKEN)?AUTH_TOKEN:SUPABASE_ANON_KEY), 'Content-Type':'application/json' }; }
     function localList(){ try{return JSON.parse(window.localStorage.getItem('amco_deals')||'[]');}catch(e){return [];} }
     function list(){ if(on){ return fetch(SUPABASE_URL+'/rest/v1/'+TABLE+'?select=data&order=created_at.asc',{headers:hdr()})
         .then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(rows){ return rows.map(function(x){return x.data;}); })
@@ -1117,7 +1193,7 @@
   root.querySelector('#pf-signout').onclick=signOut;
   /* WP-1: risk warning layer. PRESCRIBED WORDING: do not edit without approver sign-off (OI-006). */
   /* NOTIFY_EMAIL: set this to the address that should receive reservation alerts. */
-  var NOTIFY_EMAIL='sholom@amcomanagement.com'; // TODO: change to your real inbox before push
+  var NOTIFY_EMAIL='hello@amcoinvestors.com'; // TODO: change to your real inbox before push
   function sendReserveAlert(d,n){
     try{
       if(!NOTIFY_EMAIL || NOTIFY_EMAIL.indexOf('@')<0) return;
