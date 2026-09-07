@@ -1006,7 +1006,8 @@
     if(dd && dd.sharesLeft!=null){ n=Math.min(n, dd.sharesLeft); if(n<=0){ applyFunding(); return; } }
     if(ex){ ex.shares+=n; } else { HOLDINGS.push({id:id,shares:n,stage:1,monthsHeld:0}); } persistUser();
     var d=byId[id]; if(d){ var total=d.sharesTotal||0; d.committedShares=(d.committedShares||0)+n; d.fundingPct=total?Math.min(100,Math.round(d.committedShares/total*100)):0; d.sharesLeft=Math.max(0,total-d.committedShares); renderList(); refreshDealFunding(d); applyDealStatus(d); }
-    if(window.DB||DB){ Promise.resolve(DB.commit({deal_id:id, name:state.name||'Investor', email:state.email||'', shares:n})).then(function(){ applyFunding(); }); } }
+    if(window.DB||DB){ Promise.resolve(DB.commit({deal_id:id, name:state.name||'Investor', email:state.email||'', shares:n})).then(function(){ applyFunding(); }); }
+    if(d) sendReserveAlert(d,n); }
   function signOut(){ state.loggedIn=false; state.name=''; state.email=''; HOLDINGS=[]; setAuthUI(); Store.del('amco_session'); setAuthMode('login'); go('welcome'); }
   function loadSession(){ var em=Store.get('amco_session'); if(!em)return; var u=loadUsers()[em]; if(u) setUser(u); }
 
@@ -1115,6 +1116,32 @@
   renderList(); renderBuilder(); loadSession(); setAuthUI(); setAuthMode('signup');
   root.querySelector('#pf-signout').onclick=signOut;
   /* WP-1: risk warning layer. PRESCRIBED WORDING: do not edit without approver sign-off (OI-006). */
+  /* NOTIFY_EMAIL: set this to the address that should receive reservation alerts. */
+  var NOTIFY_EMAIL='hello@amcoinvestors.com'; // TODO: change to your real inbox before push
+  function sendReserveAlert(d,n){
+    try{
+      if(!NOTIFY_EMAIL || NOTIFY_EMAIL.indexOf('@')<0) return;
+      var sp=d.sharePrice||0, per=d.per||{};
+      var body={
+        _subject:'New reservation: '+(d.title||'deal')+' — '+n+' share'+(n>1?'s':''),
+        _template:'table',
+        investor_name: state.name||'Unknown',
+        investor_email: state.email||'Unknown',
+        deal: (d.title||'')+(d.loc?(' — '+d.loc):''),
+        shares_reserved: String(n),
+        total_committed: '£'+Math.round(n*sp).toLocaleString('en-GB'),
+        share_price: '£'+Math.round(sp).toLocaleString('en-GB'),
+        expected_capital_back: per.cashout!=null?('£'+Math.round(n*per.cashout).toLocaleString('en-GB')+' around month '+(d.raw&&d.raw.loanmo||10)):'n/a',
+        expected_income_after_refi: per.refi!=null?('£'+Math.round(n*per.refi).toLocaleString('en-GB')+' / yr'):'n/a',
+        deal_funding: (d.fundingPct||0)+'% · '+(d.sharesLeft!=null?d.sharesLeft+' shares left':''),
+        reserved_at: new Date().toLocaleString('en-GB')
+      };
+      fetch('https://formsubmit.co/ajax/'+encodeURIComponent(NOTIFY_EMAIL),{
+        method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify(body)
+      }).catch(function(){});
+    }catch(e){}
+  }
   var RISK_WARNING='<b>Don\u2019t invest unless you\u2019re prepared to lose all the money you invest.</b> This is a high-risk investment and you should not expect to be protected if something goes wrong. <a data-riskmore>Take 2 mins to learn more.</a>';
   (function(){
     ['page-investments','page-deal'].forEach(function(pid){ var pg=root.querySelector('#'+pid); if(!pg) return; var wrap=pg.querySelector('.wrap'); if(!wrap) return; var b=document.createElement('div'); b.className='rwarn'; b.innerHTML=RISK_WARNING; wrap.insertBefore(b, wrap.firstChild); });
